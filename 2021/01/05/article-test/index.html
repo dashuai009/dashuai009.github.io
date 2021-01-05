@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>北邮-人工智能文本分类实验报告 | dashuai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="[TOC] 1. 实验目的 掌握数据预处理的方法，对训练集数据进行预处理； 掌握文本建模的方法，对语料库的文档进行建模； 掌握分类算法的原理，基于有监督的机器学习方法，训练文本分类器； 利用学习的文本分类器，对未知文本进行分类判别； 掌握评价分类器性能的评估方法。  2. 实验类型数据挖掘算法的设计与编程实现。 3. 实验要求 文本类别数：&gt;&#x3D;10类； 训练集文档数：&gt;&#x3D;50000篇；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="北邮-人工智能文本分类实验报告">
+<meta property="og:url" content="http://dashuai009.github.io/2021/01/05/article-test/index.html">
+<meta property="og:site_name" content="dashuai">
+<meta property="og:description" content="[TOC] 1. 实验目的 掌握数据预处理的方法，对训练集数据进行预处理； 掌握文本建模的方法，对语料库的文档进行建模； 掌握分类算法的原理，基于有监督的机器学习方法，训练文本分类器； 利用学习的文本分类器，对未知文本进行分类判别； 掌握评价分类器性能的评估方法。  2. 实验类型数据挖掘算法的设计与编程实现。 3. 实验要求 文本类别数：&gt;&#x3D;10类； 训练集文档数：&gt;&#x3D;50000篇；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://dashuai009.github.io/.io//thu.png">
+<meta property="article:published_time" content="2021-01-05T15:01:53.000Z">
+<meta property="article:modified_time" content="2021-01-05T15:32:43.980Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://dashuai009.github.io/.io//thu.png">
+  
+    <link rel="alternate" href="/atom.xml" title="dashuai" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">dashuai</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Suche"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://dashuai009.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-article-test" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2021/01/05/article-test/" class="article-date">
+  <time class="dt-published" datetime="2021-01-05T15:01:53.000Z" itemprop="datePublished">2021-01-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/">人工智能</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      北邮-人工智能文本分类实验报告
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[TOC]</p>
+<h2 id="1-实验目的"><a href="#1-实验目的" class="headerlink" title="1. 实验目的"></a>1. 实验目的</h2><ul>
+<li>掌握数据预处理的方法，对训练集数据进行预处理；</li>
+<li>掌握文本建模的方法，对语料库的文档进行建模；</li>
+<li>掌握分类算法的原理，基于有监督的机器学习方法，训练文本分类器；</li>
+<li>利用学习的文本分类器，对未知文本进行分类判别；</li>
+<li>掌握评价分类器性能的评估方法。</li>
+</ul>
+<h2 id="2-实验类型"><a href="#2-实验类型" class="headerlink" title="2. 实验类型"></a>2. 实验类型</h2><p>数据挖掘算法的设计与编程实现。</p>
+<h2 id="3-实验要求"><a href="#3-实验要求" class="headerlink" title="3. 实验要求"></a>3. 实验要求</h2><ul>
+<li>文本类别数：&gt;=10类；</li>
+<li>训练集文档数：&gt;=50000篇；每类平均5000篇。</li>
+<li>测试集文档数：&gt;=50000篇；每类平均5000篇。</li>
+</ul>
+<h2 id="4-实验内容"><a href="#4-实验内容" class="headerlink" title="4. 实验内容"></a>4. 实验内容</h2><p>利用分类算法实现对文本的数据挖掘，主要包括：</p>
+<ul>
+<li>语料库的构建，主要包括利用爬虫收集Web文档等；</li>
+<li>语料库的数据预处理，包括文档建模，如去噪，分词，建立数据字典，使用词袋模型或主题模型表达文档等；</li>
+<li>选择分类算法（朴素贝叶斯（必做）、SVM/其他等），训练文本分类器，理解所选的分类算法的建模原理、实现过程和相关参数的含义；</li>
+<li>对测试集的文本进行分类</li>
+<li>对测试集的分类结果利用正确率和召回率进行分析评价：计算每类正确率、召回率，计算总体正确率和召回率。</li>
+</ul>
+<h2 id="5-实验准备"><a href="#5-实验准备" class="headerlink" title="5. 实验准备"></a>5. 实验准备</h2><h3 id="5-1-实验环境"><a href="#5-1-实验环境" class="headerlink" title="5.1. 实验环境"></a>5.1. 实验环境</h3><p><strong>fedora 33</strong></p>
+<p>个人比较喜欢linux环境，windows环境应该也可以完成下面的步骤。一些文件路径可能会修改。<br>另外，硬盘读取速度等都会影响实验结果（速度等方面）。<br>\subsection{数据集准备}<br>\href{THUCNews}{<a target="_blank" rel="noopener" href="http://thuctc.thunlp.org/message%7D">http://thuctc.thunlp.org/message}</a></p>
+<p>数据集大小：1.45GB</p>
+<p>样本数量：80多万</p>
+<p>数据集详情链接：\href{thuctc}{<a target="_blank" rel="noopener" href="http://thuctc.thunlp.org}/">http://thuctc.thunlp.org}</a></p>
+<p>在解压出的目录下新建两个文件夹\texttt{trainData}和\texttt{testData}。<br>注意：Linux下解压会多一层目录并多一个\texttt{__MACOSX}，这个并不影响实验。</p>
+<p>解压结果如下</p>
+<p><img src="/.io//thu.png" alt="sdfasdf"></p>
+<p>\subsection{cppjieba}<br>\href{cppjieba}{<a target="_blank" rel="noopener" href="https://github.com/yanyiwu/cppjieba%7D%E6%98%AF&quot;%E7%BB%93%E5%B7%B4(Jieba)&quot;%E4%B8%AD%E6%96%87%E5%88%86%E8%AF%8D%E7%9A%84C++%E7%89%88%E6%9C%AC%E3%80%82">https://github.com/yanyiwu/cppjieba}是&quot;结巴(Jieba)&quot;中文分词的C++版本。</a><br>这个要比python快10倍，解决本实验足够好用!</p>
+<p>用法<br>\begin{itemize}<br>    \item 依赖软件</p>
+<pre><code>      \texttt&#123;g++ (version &gt;= 4.1 is recommended) or clang++;\\cmake (version &gt;= 2.6 is recommended);&#125;
+
+\item 下载和编译
+
+      \texttt&#123;git clone --depth=10 --branch=master git://github.com/yanyiwu/cppjieba.git\\cd cppjieba\\mkdir build\\cd build\\cmake ..\\make&#125;</code></pre>
+<p>\end{itemize}</p>
+<p>结果如下</p>
+<p>\begin{figure}[!h]<br>    \centering<br>    \includegraphics[width=0.3\textwidth]{./img/jieba.png}<br>    \caption{cppjieba}<br>\end{figure}</p>
+<p>我们只需要修改\texttt{cppjieba\textbackslash test\symbol{92}demo.cpp}，<br>但我们要在\texttt{cppjieba\symbol{92}build}下执行\texttt{make}进行编译，<br>并执行\texttt{./demo}运行分词程序。</p>
+<p>\subsection{朴素贝叶斯分类器}<br>贝叶斯方法的新实例分类目标是在给定描述实例的属性值<br>$&lt;a_1,a_2,\dots ,a_n&gt;$下，得到最可能的目标值$V_{MAP}$。</p>
+<p>$$<br>    \begin{aligned}<br>        v_{MAP} &amp; ={arg\max}<em>{v_j}P(v_j|a_1,a_2,\dots ,a_n)                                      \<br>                &amp; ={arg\max}_{v_j\in V}\frac{P(a_1,a_2,\dots ,a_n)P(v_j)}{P(a_1,a_2,\dots ,a_n)} \<br>                &amp; ={arg\max}</em>{v_j\in V}P(a_1,a_2,\dots,a_n)P(v_j)                                \<br>                &amp; ={arg\max}_{v_j\in V}P(v_j)\prod_i P(a_i|v_j)<br>    \end{aligned}<br>$$</p>
+<p>采纳m-估计方法，即有统一的先验概率并且m等于词汇表的<br>大小，因此<br>$$<br>    \begin{aligned}<br>        P(w_k|v_j)=\frac{v_k+1}{n+|Vocabulary|}<br>    \end{aligned}<br>$$</p>
+<p>定义如下函数：</p>
+<p>\texttt{Learn_Naive_Bayes_Text( Examples, V )}</p>
+<p>Examples为一组文本文档以及它们的目标值。V为所有可能目标值的集合。此函数作用是学<br>习概率项$P(w_k|v_j)$和$P(v_j)$。<br>\begin{itemize}<br>    \item 收集Examples中所有的单词、标点符号以及其他记号</p>
+<pre><code>      Vocabulary$\leftarrow$在Examples中任意文本文档中出现的所有单词及记号的集合
+\item 计算所需要的概率项$P(vj)$和$P(wk|vj)$
+
+      对V中每个目标值vj
+
+      \begin&#123;itemize&#125;
+          \item $docs_j\leftarrow$Examples中目标值为$v_j$的文档子集
+          \item $P(v_j)\leftarrow|docs_j| / |Examples|$
+          \item  $Text_j\leftarrow$将$docs_j$中所有成员连接起来建立的单个文档
+          \item  $n\leftarrow$在$Text_j$中不同单词位置的总数
+          \item  对Vocabulary中每个单词$w_k$
+                \begin&#123;itemize&#125;
+                    \item $n_k\leftarrow$单词$w_k$出现在$Text_j$中的次数
+                    \item  $P(w_k|v_j)\leftarrow(n_k+1) / (n+|Vocabulary|)$
+                \end&#123;itemize&#125;
+      \end&#123;itemize&#125;</code></pre>
+<p>\end{itemize}</p>
+<p>\subsection{$\chi^2$检验}</p>
+<p>$$<br>\begin{aligned}<br>    \chi^2(t,c)=\frac{N(AD-BC)^2}{(A+B)(A+C)(C+D)(B+D)}<br>\end{aligned}<br>$$</p>
+<p>\subsection{svm}<br>下载地址：\href{libsvm}{<a target="_blank" rel="noopener" href="http://www.csie.ntu.edu.tw/~cjlin/cgi-bin/libsvm.cgi?+http://www.csie.ntu.edu.tw/~cjlin/libsvm+tar.gz%7D">http://www.csie.ntu.edu.tw/~cjlin/cgi-bin/libsvm.cgi?+http://www.csie.ntu.edu.tw/~cjlin/libsvm+tar.gz}</a></p>
+<p>之后\texttt{make}一下，就会用三个可执行文件，\texttt{svm-scale  svm-train  svm-train}。<br>分别是数据整理，模型训练和数据预测。</p>
+<p>具体参数可以直接输入\texttt{./svm-scale}获得。</p>
+<p>更多内容可以自行百度。</p>
+<p>\section{代码实现}</p>
+<p>总共分为五个部分<br>\begin{lstlisting}<br>trainingData();<br>makeDict();<br>makeSvm();<br>testingData();<br>printAns();<br>\end{lstlisting}<br>\subsection{变量声明}<br>\begin{lstlisting}<br>using namespace std;</p>
+<p>const char *const DICT_PATH = “../dict/jieba.dict.utf8”;<br>const char *const HMM_PATH = “../dict/hmm_model.utf8”;<br>const char *const USER_DICT_PATH = “../dict/user.dict.utf8”;<br>const char *const IDF_PATH = “../dict/idf.utf8”;<br>const char *const STOP_WORD_PATH = “../dict/stop_words.utf8”;</p>
+<p>const string dataSet = “../../THUCNews/THUCNews/“;<br>// const string dataSet = “../../THUCNews/“;<br>const string svmTrainData = “../../THUCNews/trainData/“;<br>const string svmTestData = “../../THUCNews/testData/“;</p>
+<p>const int MAXS = 8e6 + 10;  //文件大小限制</p>
+<p>//Vtot 总的类别数量<br>//maxCommon取相关性的前200的词组成词袋<br>//testCnt每个类别如果有2*testCnt篇文章，<br>//就取testCnt篇作为测试数据，<br>//再取testCnt篇作为训练数据 </p>
+<p>const int Vtot = 11, maxCommon = 200, testCnt = 5000;</p>
+<p>//所有种类<br>string V[Vtot] = {“体育”, “娱乐”, “家居”, “彩票”, “房产”, “教育”,<br>                  “时政”, “游戏”, “社会”, “科技”, “财经”};</p>
+<p>//dic[i]第i类文章中出现的所有词<br>map&lt;string, int&gt; dic[Vtot + 1];</p>
+<p>//p[i][word] p(word|vj=i)<br>//第i类文章中，word出现的概率，做平滑处理<br>map&lt;string, int&gt; p[Vtot];</p>
+<p>//kappa[i][word] word和第i类文章的kappa^2值<br>map&lt;string, int&gt; kappa[Vtot + 1];</p>
+<p>//在处理svm数据集时，每个单词的编号<br>map&lt;string, int&gt; svmIndex;</p>
+<p>//idf值<br>map&lt;string, double&gt; idf;</p>
+<p>//fileList[i]第i类文章列表<br>vector<string> fileList[Vtot];</string></p>
+<p>//混淆矩阵<br>int confusionMatrix[Vtot][Vtot];<br>int docs[Vtot + 1];  // docs[i]:第i类文章训练或测试的数目</p>
+<p>int n[Vtot + 1];     // n[i]:第i类有多少个单词（有重复）</p>
+<p>int precision[Vtot], recall[Vtot];  //准确率和回归率</p>
+<p>//多线程id<br>long unsigned int thrd[Vtot];</p>
+<p>#define dictAll dic[Vtot]</p>
+<p>//结巴分词器<br>cppjieba::Jieba jieba(DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH,<br>                      STOP_WORD_PATH);<br>\end{lstlisting}<br>\subsection{训练数据部分}<br>下面是处理数据的多线程函数<br>\begin{lstlisting}<br>/**</p>
+<ul>
+<li><p>多线程函数</p>
+</li>
+<li><p>处理数据</p>
+</li>
+<li><p>读入文件-&gt;分词-&gt;计算dic[type]-&gt;计算kappa[type]</p>
+</li>
+<li><p>/<br>void *trainingData(void *t) {<br>  int type = (long long)t;<br>  auto &amp;dict = dic[type];<br>  auto &amp;kap = kappa[type];<br>  char sentence[MAXS];<br>  for (int d = 0; d &lt; docs[type]; ++d) {</p>
+<pre><code>  //读入文件
+  string fileName = dataSet + V[type] + &quot;/&quot; + fileList[type][d];
+  int fd = open(fileName.c_str(), O_RDONLY);
+  int len = pread(fd, sentence, MAXS, 0);
+  close(fd);
+  //如果文件大小超出MAXS会出错
+  if (len &lt; 0) continue;  
+  sentence[len] = &#39;\0&#39;;
+  vector&lt;pair&lt;string, string&gt;&gt; tagres;
+  //分词
+  jieba.Tag(sentence, tagres);
+
+  //计算dic[type]-&gt;计算kappa[type]
+  set&lt;string&gt; thisArticle;//本篇文章单词集合
+  for (auto it : tagres) &#123;
+      const auto &amp;word = it.first;  //单词
+      if (strstr(it.second.c_str(), &quot;n&quot;) != NULL &amp;&amp;
+          word.length() &gt; 2) &#123;  //名词 且 长度大于一
+          dict.find(word) != dict.end() ? dict[word]++ : dict[word] = 1;
+          thisArticle.insert(word);
+      &#125;
+  &#125;
+  for (auto it : thisArticle) &#123;
+      kap.find(it) != kap.end() ? kap[it]++ : kap[it] = 1;
+  &#125;</code></pre>
+<p>  }<br>  cout &lt;&lt; V[type] &lt;&lt; “\tDone\n”;<br>  return NULL;<br>}<br>\end{lstlisting}</p>
+</li>
+</ul>
+<p>想要调用上面的线程函数，需要先读取文件列表，如下：</p>
+<p>\begin{lstlisting}<br>//读取文件列表<br>void readFileLists(string dir, vector<string> &amp;fileList) {<br>    // cout&lt;&lt;dir&lt;&lt;’\n’;<br>    DIR *d = opendir(dir.c_str());<br>    struct dirent *entry;<br>    while ((entry = readdir(d)) != NULL) {<br>        if (strstr(entry-&gt;d_name, “.txt”) != NULL)<br>            fileList.push_back(entry-&gt;d_name);<br>    }<br>    closedir(d);<br>}<br>//读取文件列表并处理训练数据<br>void trainingData() {<br>    for (int i = 0; i &lt; Vtot; ++i) {<br>        readFileLists(dataSet + V[i], fileList[i]);<br>    }</string></p>
+<pre><code>for (int i = 0; i &lt; Vtot; ++i) &#123;
+    docs[i] = min(int(fileList[i].size()) / 2, testCnt);
+    // testCnt方便测试
+
+    cout &lt;&lt; V[i] &lt;&lt; &quot; 类的文件个数为 &quot; &lt;&lt; docs[i] &lt;&lt; &#39;\n&#39;;
+
+    docs[Vtot] += docs[i];
+    int res = pthread_create(&amp;thrd[i], NULL, trainingData, (void *)i);
+    if (res) &#123;
+        printf(&quot;Create thress NO.%d failed\n&quot;, i);
+        exit(res);
+    &#125;
+&#125;
+for (int i = 0; i &lt; Vtot; ++i) &#123;
+    pthread_join(thrd[i], NULL);
+&#125;</code></pre>
+<p>}</p>
+<p>\end{lstlisting}</p>
+<p>\subsection{生成字典部分}</p>
+<p>\begin{lstlisting}<br>//抽取词典，使用kappa^2检验<br>void makeDict() {<br>    for (int i = 0; i &lt; Vtot; ++i) {<br>        vector&lt;pair&lt;double, string&gt;&gt; mostCommon;<br>        for (auto it : kappa[i]) {<br>            double A = 0, B = 0, C = 0, D = 0;<br>            A = it.second;<br>            C = docs[i] - A;<br>            const auto &amp;word = it.first;<br>            for (int j = 0; j &lt; Vtot; ++j)<br>                if (i != j) {<br>                    if (kappa[j].find(word) != kappa[j].end()) {<br>                        B += kappa[j][word];<br>                    }<br>                }<br>            D = docs[Vtot] - docs[i] - B;<br>            double k = docs[Vtot] * (A * D - B * C) * (A * D - B * C) /<br>                       ((A + C) * (A + B) * (B + D) * (C + D));<br>            mostCommon.push_back({k, word});<br>        }<br>        sort(mostCommon.begin(), mostCommon.end());</p>
+<pre><code>    reverse(mostCommon.begin(), mostCommon.end());
+    int item = 0;
+
+    cout &lt;&lt; V[i] &lt;&lt; &#39;:&#39;;
+
+    for (auto it : mostCommon) &#123;
+        ++item;
+        if (item &gt; maxCommon) break;
+        const auto &amp;word = it.second;
+        const int cnt = dic[i][word];
+        n[i] += cnt;
+        dictAll.find(word) != dictAll.end() ? dictAll[word] += cnt
+                                            : dictAll[word] = cnt;
+    &#125;
+    cout &lt;&lt; V[i] &lt;&lt; &quot;单词个数&quot; &lt;&lt; n[i] &lt;&lt; &#39;\n&#39;;
+    n[Vtot] += n[i];
+
+    /*for (int j = max(0, (int)mostCommon.size() - 20);
+         j &lt; (int)mostCommon.size(); ++j) &#123;
+        cout &lt;&lt; &quot;(&quot; &lt;&lt; mostCommon[j].first &lt;&lt; &#39; &#39; &lt;&lt; mostCommon[j].second
+             &lt;&lt; &quot;) &quot;;
+    &#125;
+    cout &lt;&lt; &#39;\n&#39;;*/
+&#125;</code></pre>
+<p>}<br>\end{lstlisting}</p>
+<p>\subsection{生成svm的训练数据文件和测试数据文件}</p>
+<p>\begin{lstlisting}<br>/**</p>
+<ul>
+<li>多线程函数</li>
+<li>整理svm用到的数据文件</li>
+<li>包括测试文件和输出文件</li>
+<li>要按照libsvm要求的数据格式来</li>
+<li>/</li>
+</ul>
+<p>void *svmData(void *t) {<br>    int type = (long long)t;<br>    //先打开训练数据文件<br>    int fdout = open((svmTrainData + V[type]).c_str(), O_WRONLY | O_CREAT);<br>    if (fdout == -1) {<br>        cout &lt;&lt; errno &lt;&lt; ‘\n’;<br>        perror(“open”);<br>    }<br>    auto &amp;dict = dic[type];<br>    auto &amp;kap = kappa[type];<br>    string outBuf;<br>    char sentence[MAXS];<br>    int fdoffset = 0;</p>
+<pre><code>for (int d = 0; d &lt; (int)fileList[type].size() &amp;&amp; d &lt; 2 * docs[type]; ++d) &#123;
+    if (d == docs[type]) &#123;  //这之后是测试数据集
+        close(fdout);
+        fdout = open((svmTestData + V[type]).c_str(), O_WRONLY | O_CREAT);
+        fdoffset = 0;
+        if (fdout == -1) &#123;
+            cout &lt;&lt; errno &lt;&lt; &#39;\n&#39;;
+            perror(&quot;open&quot;);
+        &#125;
+    &#125;
+
+    //读取文件并进行分词
+    string fileName = dataSet + V[type] + &quot;/&quot; + fileList[type][d];
+    int fd = open(fileName.c_str(), O_RDONLY);
+    long long int len = pread(fd, sentence, MAXS, 0);
+    close(fd);
+    if (len &lt; 0) continue;  //如果文件大小超出MAXS会出错
+    sentence[len] = &#39;\0&#39;;
+    // cout &lt;&lt; sentence &lt;&lt; &#39;\n&#39;;
+    vector&lt;pair&lt;string, string&gt;&gt; tagres;
+    jieba.Tag(sentence, tagres);
+
+    //统计这篇文章中的词频
+    map&lt;string, int&gt; art;
+    int totArt = 0;
+    for (auto it : tagres) &#123;
+        const auto &amp;word = it.first;  //单词
+        if (dictAll.find(word) != dictAll.end()) &#123;
+            art.find(word) != art.end() ? art[word]++ : art[word] = 1;
+            totArt++;
+        &#125;
+    &#125;
+
+    outBuf = to_string(type) + &quot; &quot;;
+
+    for (auto it : art) &#123;
+        auto &amp;word = it.first;
+        double tf = it.second * 1.0 / totArt;  // tf-idf=tf*idf
+        outBuf += to_string(svmIndex[word]) + &quot;:&quot; +
+                  to_string(tf * idf[word]) + &quot; &quot;;
+    &#125;
+    outBuf += &#39;\n&#39;;
+    pwrite(fdout, outBuf.c_str(), outBuf.length(), fdoffset);
+    fdoffset += outBuf.length();
+&#125;
+close(fdout);
+return NULL;</code></pre>
+<p>}<br>/**</p>
+<ul>
+<li><p>处理svm用到的数据</p>
+</li>
+<li><p>/<br>void makeSvm() {<br>  //对单词进行编号，并计算idf值<br>  int item = 0;<br>  for (auto it : dictAll) {</p>
+<pre><code>  auto &amp;word = it.first;
+  svmIndex[word] = ++item;
+  for (int i = 0; i &lt; Vtot; ++i) &#123;
+      if (kappa[i].find(word) != kappa[i].end()) &#123;
+          idf.find(word) != idf.end() ? idf[word] += kappa[i][word]
+                                      : idf[word] = kappa[i][word];
+      &#125;
+  &#125;</code></pre>
+<p>  }<br>  for (auto &amp;it : idf) {</p>
+<pre><code>  it.second = log10(docs[Vtot] * 2 / (it.second + 1));</code></pre>
+<p>  }</p>
+<p>  //多线程处理数据，每个线程处理一个类别的数据<br>  for (int i = 0; i &lt; Vtot; ++i) {</p>
+<pre><code>  int res = pthread_create(&amp;thrd[i], NULL, svmData, (void *)i);
+  if (res) &#123;
+      printf(&quot;Create thress NO.%d failed\n&quot;, i);
+      exit(res);
+  &#125;</code></pre>
+<p>  }<br>  for (int i = 0; i &lt; Vtot; ++i) {</p>
+<pre><code>  pthread_join(thrd[i], NULL);</code></pre>
+<p>  }</p>
+<p>  //处理完成之后，将所有类别的数据合到一起<br>  char buf[MAXS];<br>  int fdout =</p>
+<pre><code>  open((svmTrainData + &quot;trainData.txt&quot;).c_str(), O_WRONLY | O_CREAT);</code></pre>
+<p>  if (fdout == -1) {</p>
+<pre><code>  cout &lt;&lt; errno &lt;&lt; &#39;\n&#39;;
+  perror(&quot;open&quot;);</code></pre>
+<p>  }</p>
+<p>  off_t off = 0;<br>  for (int i = 0; i &lt; Vtot; ++i) {</p>
+<pre><code>  int fd = open((svmTrainData + V[i]).c_str(), O_RDONLY);
+  int len = pread(fd, buf, MAXS, 0);
+  close(fd);
+  if (len &lt; 0) continue;
+  buf[len] = &#39;\0&#39;;
+  pwrite(fdout, buf, strlen(buf), off);
+  cout &lt;&lt; strlen(buf) &lt;&lt; &#39;\n&#39;;
+  off += strlen(buf);
+  cout &lt;&lt; V[i] &lt;&lt; &#39; &#39; &lt;&lt; strlen(buf) &lt;&lt; &#39; &#39; &lt;&lt; off &lt;&lt; &#39;\n&#39;;</code></pre>
+<p>  }<br>  close(fdout);</p>
+<p>  fdout = open((svmTestData + “testData.txt”).c_str(), O_WRONLY | O_CREAT);<br>  off = 0;<br>  for (int i = 0; i &lt; Vtot; ++i) {</p>
+<pre><code>  int fd = open((svmTestData + V[i]).c_str(), O_RDONLY);
+  int len = pread(fd, buf, MAXS, 0);
+  close(fd);
+  if (len &lt; 0) continue;
+  buf[len] = &#39;\0&#39;;
+  pwrite(fdout, buf, strlen(buf), off);
+  off += strlen(buf);
+  cout &lt;&lt; V[i] &lt;&lt; &#39; &#39; &lt;&lt; strlen(buf) &lt;&lt; &#39; &#39; &lt;&lt; off &lt;&lt; &#39;\n&#39;;</code></pre>
+<p>  }<br>  close(fdout);<br>}<br>\end{lstlisting}</p>
+</li>
+</ul>
+<p>\subsection{进行文本分类}</p>
+<p>先预处理出p的值，</p>
+<p>\begin{lstlisting}<br>/**</p>
+<ul>
+<li><p>朴素贝叶斯分类器</p>
+</li>
+<li><p>/<br>void *bayes(void *t) {<br>  int type = (long long)t;<br>  cout &lt;&lt; “classfiying “ &lt;&lt; V[type] &lt;&lt; “\n”;<br>  char sentence[MAXS];</p>
+<p>  for (int f = docs[type]; f &lt; (int)fileList[type].size(); ++f) {</p>
+<pre><code>  if (f - docs[type] &gt; docs[type]) break;
+
+  //读取文件
+  string fileName = dataSet + V[type] + &quot;/&quot; + fileList[type][f];
+  int fd = open(fileName.c_str(), O_RDONLY);
+  int len = pread(fd, sentence, MAXS, 0);
+  close(fd);
+  //分词
+  if (len &lt; 0) continue;  //读入出错，buf不够之类的
+  sentence[len] = &#39;\0&#39;;
+  vector&lt;pair&lt;string, string&gt;&gt; tagres;
+  jieba.Tag(string(sentence), tagres);
+
+  //计算argmax(p)
+  pair&lt;double, int&gt; ans[Vtot];
+  for (int i = 0; i &lt; Vtot; ++i) &#123;
+      ans[i] = &#123;docs[i] * 1.0 / docs[Vtot], i&#125;;
+  &#125;
+  for (auto it : tagres) &#123;
+      if (dictAll.find(it.first) != dictAll.end()) &#123;
+          for (int i = 0; i &lt; Vtot; ++i) &#123;
+              ans[i].first += p[i][it.first];
+          &#125;
+      &#125;
+  &#125;
+  sort(ans, ans + Vtot);
+  confusionMatrix[type][ans[Vtot - 1].second] += 1;</code></pre>
+<p>  }<br>  cout &lt;&lt; “classfiy “ &lt;&lt; V[type] &lt;&lt; “\tdone\n”;<br>  return NULL;<br>}</p>
+</li>
+</ul>
+<p>//训练数据<br>void testingData() {</p>
+<pre><code>//预处理p[i][word]值
+cout &lt;&lt; &quot;字典长度=&quot; &lt;&lt; dictAll.size() &lt;&lt; &#39;\n&#39;;
+for (int vj = 0; vj &lt; Vtot; ++vj) &#123;
+    for (auto it : dictAll) &#123;
+        const auto &amp;word = it.first;
+        if (dic[vj].find(word) != dic[vj].end()) &#123;
+            p[vj][word] =
+                log10(dic[vj][word] + 1) - log10(n[vj] + dictAll.size());
+        &#125; else &#123;
+            p[vj][word] = log10(1) - log10(n[vj] + dictAll.size());
+        &#125;
+    &#125;
+&#125;
+
+//多线程进行文本分类
+for (int i = 0; i &lt; Vtot; ++i) &#123;
+    int res = pthread_create(&amp;thrd[i], NULL, bayes, (void *)i);
+    if (res) &#123;
+        printf(&quot;Create thress NO.%d failed\n&quot;, i);
+        exit(res);
+    &#125;
+&#125;
+for (int i = 0; i &lt; Vtot; ++i) &#123;
+    pthread_join(thrd[i], NULL);
+&#125;</code></pre>
+<p>}<br>\end{lstlisting}</p>
+<p>\subsection{输出结果}<br>\begin{lstlisting}<br>/输出想要的答案<br>void printAns() {<br>    double avrPre = 0, avrRecall = 0;<br>    for (int v1 = 0; v1 &lt; Vtot; ++v1) {<br>        cout &lt;&lt; V[v1] &lt;&lt; “:\t”;<br>        for (int v2 = 0; v2 &lt; Vtot; ++v2) {<br>            precision[v2] += confusionMatrix[v1][v2];<br>            recall[v1] += confusionMatrix[v1][v2];<br>            cout &lt;&lt; confusionMatrix[v1][v2] &lt;&lt; ‘\t’;<br>        }<br>        cout &lt;&lt; ‘\n’;<br>    }<br>    for (int v = 0; v &lt; Vtot; ++v) {<br>        cout &lt;&lt; V[v] &lt;&lt; ‘\n’;<br>        cout &lt;&lt; “准确率=” &lt;&lt; confusionMatrix[v][v] * 100.0 / precision[v]<br>             &lt;&lt; “% “;<br>        avrPre += confusionMatrix[v][v] * 100.0 / precision[v];<br>        cout &lt;&lt; “召回率=” &lt;&lt; confusionMatrix[v][v] * 100.0 / recall[v] &lt;&lt; “%\n”;<br>        avrRecall += confusionMatrix[v][v] * 100.0 / recall[v];<br>    }<br>    cout &lt;&lt; “平均准确率=” &lt;&lt; avrRecall / Vtot &lt;&lt; “% “<br>         &lt;&lt; “平均召回率=” &lt;&lt; avrRecall / Vtot &lt;&lt; “\n”;<br>}<br>\end{lstlisting}</p>
+<p>\section{实验结果}</p>
+<p>先输出训练的文件个数，训练完成之后，统计每个类别有多少单词。<br>之后，得出字典长度为2037。</p>
+<p>\begin{figure}[!h]<br>    \centering<br>    \includegraphics[width=0.7\textwidth]{./img/ans1.png}<br>    \caption{结果}<br>\end{figure}</p>
+<p>预测完成之后是混淆矩阵。</p>
+<p>\begin{figure}[!h]<br>    \centering<br>    \includegraphics[width=0.85\textwidth]{./img/ans2.png}<br>    \caption{结果}<br>\end{figure}</p>
+<p>输出召回率和准确率，最后输出运行时间。<br>\textbf{可以看到最后运行时间仅为12秒，这就是c++的长处之一。}<br>总共分析了55000篇文章，从读入到分词，到其他计算。总共执行时间非常短。<br>相比于python的10min左右要好得多。</p>
+<p>\begin{figure}[!h]<br>    \centering<br>    \includegraphics[width=0.55\textwidth]{./img/ans3.png}<br>    \caption{结果}<br>\end{figure}</p>
+<p>最后的实验结果也比较理想。准确率和召回率都比较高。</p>
+<p>\section{svm}<br>这里我并没有用到梯度预测、n折交叉验证（训练时间太长，实验时间不够）。<br>但我们完整实现了用libsvm的工具进行文本分类的必要步骤。以下均在\texttt{libsvm}目录下。<br>\begin{enumerate}<br>    \item 数据整理。</p>
+<pre><code>      \texttt&#123;../THUCNews/trainData/trainData.txt&#125;是待训练数据的原始形式，
+
+      \texttt&#123;../THUCNews/testData/testData.txt&#125;是待预测数据。
+
+      用\texttt&#123;./svm-scale -l 0 -r train.scale ../THUCNews/trainData/trainData.txt&#125;
+
+      和\texttt&#123;./svm-scale -l 0 -r test.scale ../THUCNews/testData/testData.txt&#125;命令,
+      可以将训练数据、测试数据整理为标准格式，且下界为0.
+\item 模型训练
+
+      \texttt&#123;./svm-train -h 0 -g 0.001 -c 10 train.scale my.model&#125;
+      得到模型文件。
+\item 数据预测
+
+      \texttt&#123;./svm-predict test.scale my.model ans.out&#125;</code></pre>
+<p>\end{enumerate}<br>结果如下</p>
+<p>\begin{figure}[!h]<br>    \centering<br>    \includegraphics[width=0.75\textwidth]{./img/svmans.png}<br>    \caption{cppjieba}<br>\end{figure}</p>
+<p>实验结果较为理想。当然，该方法还有很多可以改进的空间，这里就不深究。</p>
+<p>\appendix<br>\section{代码}<br>\href{<a target="_blank" rel="noopener" href="https://paste.ubuntu.com/p/p9KQmh8Q2T/%7D%7Bhttps://paste.ubuntu">https://paste.ubuntu.com/p/p9KQmh8Q2T/}{https://paste.ubuntu</a>.<br>com/p/p9KQmh8Q2T/}<br>\end{document}</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://dashuai009.github.io/2021/01/05/article-test/" data-id="ckjk5dhlt0000ellma4k4ckg7" data-title="北邮-人工智能文本分类实验报告" class="article-share-link">Teilen</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2021/01/05/test/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          test
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2021/01/05/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">Hello World</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Kategorien</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/">人工智能</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">一月 2021</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/01/05/test/">test</a>
+          </li>
+        
+          <li>
+            <a href="/2021/01/05/article-test/">北邮-人工智能文本分类实验报告</a>
+          </li>
+        
+          <li>
+            <a href="/2021/01/05/hello-world/">Hello World</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
