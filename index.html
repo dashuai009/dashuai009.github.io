@@ -34,7 +34,7 @@
 
 <!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-<!-- hexo injector head_end end --><meta name="generator" content="Hexo 5.3.0"></head>
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 5.4.0"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -154,19 +154,81 @@
           <div id="js-content" class="content-ll">
             
   
-    <article id="post-linux文本文件及处理工具" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+    <article id="post-linux正则表达式" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E5%8F%8A%E5%A4%84%E7%90%86%E5%B7%A5%E5%85%B7/">linux文本文件及处理工具</a>
+      <a class="article-title" href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/">linux正则表达式</a>
     </h1>
   
 
         
-        <a href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E5%8F%8A%E5%A4%84%E7%90%86%E5%B7%A5%E5%85%B7/" class="archive-article-date">
+        <a href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" class="archive-article-date">
+  	<time datetime="2021-06-23T06:37:39.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-23</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-linux文本文件相关命令" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/">linux文本文件及处理工具</a>
+    </h1>
+  
+
+        
+        <a href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/" class="archive-article-date">
   	<time datetime="2021-06-23T02:02:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-23</time>
 </a>
         
@@ -174,127 +236,10 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <a id="more"></a>
-<h2 id="more-less：逐屏显示文件"><a href="#more-less：逐屏显示文件" class="headerlink" title="more/less：逐屏显示文件"></a>more/less：逐屏显示文件</h2><hr>
-<pre><code> 空格    显示下一屏
- 回车    上滚一行，当所感兴趣的段落内容正好处于当前屏的 尾部，另有一部分在下一页中时，可以连续按回车， 将感兴趣的部分滚动上来
-  q      (quit)退出程序，后面的内容不再显示
-</code></pre><p>   /pattern  搜索指定模式的字符串，模式描述用正则表达式<br>      /      继续查找指定模式的字符串<br>      h      (Help)帮助信息。打印more命令的所有功能列表<br>    Ctrl-L   屏幕刷新</p>
-<hr>
-<p>  : more</p>
-<h2 id="what-is-less"><a href="#what-is-less" class="headerlink" title="what is less"></a>what is less</h2><p>less is more</p>
-<ul>
-<li><p>回退浏览的功能更强</p>
-</li>
-<li><p>可直接使键盘的上下箭头键，或者j,k，类似vi的光标定位键，以及PgUp，PgDn，Home，End键</p>
-</li>
-<li><p>有的Unix系统不提供less命令，但是可利用more命令的增强功能</p>
-</li>
-</ul>
-<p>cat与od：列出文件内容</p>
-<p>head与tail：显示文件的头部或者尾部</p>
-<p>tee：三通</p>
-<p>wc：字计数</p>
-<p>sort：对文件内容排序</p>
-<p>tr：翻译字符</p>
-<p>uniq：筛选文件中的重复行</p>
-<h1 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h1><ul>
-<li><p>非特殊字符与其自身匹配，如：正则表达式a与字符串a匹配, b与b，/与/</p>
-</li>
-<li><p>转义字符<code>\. \ \\ \$ \[</code></p>
-</li>
-<li><p>圆点（·）匹配任意单字符</p>
-</li>
-<li><p>在一对方括号之间的字符为集合的内容，[abcd]与a或b,c,d匹配</p>
-</li>
-<li><p>圆点,星号，反斜线在方括号内时，代表它们自己，<br>如:[\.]可匹配3个单字符</p>
-</li>
-<li><p>用减号-定义一个区间</p>
-<ul>
-<li><p>如[a-d] [A-Z] [a-zA-Z0-9]</p>
-</li>
-<li><p>集合含左右中括号两个字符</p>
-</li>
-<li><p>减号在最后，则失去表示区间的意义 [ad-]只与3个字符匹配</p>
-</li>
-</ul>
-</li>
-<li><p>用 ̂表示补集</p>
-<ul>
-<li><p>在̂开头,则表示与集合内字符之外的任意字符匹配<br>如：[â-z]匹配任一非小写字母 []̂[]匹配任一非中括号字符</p>
-</li>
-<li><p>不̂在开头,则失去其表示补集的意义 如：[a-z]̂能匹配27个单字符</p>
-</li>
-</ul>
-</li>
-<li><p>串结 如abc， [A-Z].[0-9]·</p>
-</li>
-<li><p>星号（*）<br>单字符正则表达式后跟*，匹配此单字符正则表达式的0次或任意多次出现</p>
-</li>
-<li><p>$ 在尾部时有特殊意义，否则与其自身匹配 例：123$<br>匹配文件中行尾的123，不在行尾的123字符不匹配<br>例：$123与字符串$123匹配 例：.$ 匹配行尾的任意字符</p>
-</li>
-<li><p>在̂首部时有特殊意义，否则与其自身匹配<br>例：p̂rintf匹配行首的printf字符串，不在行首的printf串不匹配<br>例：Hell̂o与字符串Hell̂o匹配 例：在vi中使用 :10,50s/ ̂   //g<br>删除10-50行的每行行首的4个空格</p>
-</li>
-</ul>
-<h2 id="PCRE-Perl-compatible-regular-expression-改进了基本正则表达式（BRE）"><a href="#PCRE-Perl-compatible-regular-expression-改进了基本正则表达式（BRE）" class="headerlink" title="PCRE: Perl-compatible regular expression,改进了基本正则表达式（BRE）"></a>PCRE: Perl-compatible regular expression,改进了基本正则表达式（BRE）</h2><ul>
-<li><p>分组：圆括号()</p>
-</li>
-<li><p>表示逻辑运算：表示逻辑”或” 的符号 | (xy)*<br>可匹配空字符串，xy，xyxy，xyxyxy (pink|green) 与pink或green匹配</p>
-</li>
-<li><p>重复次数定义：与星号地位类似的+和?，限定重复次数 \\m,n</p>
-<p>*号表示它左边的单字符正则表达式的0次或多次重复</p>
-<p>+号表示1次或多次： [0-9]+ 匹配长度至少为1数字串</p>
-<p>?表示0次或一次： a? 匹配零个或一个a</p>
-<p>限定重复次数 \\m,n\\，例如：[1-9][0-9]\\6,8\\ 7-9位数字，首位非0</p>
-</li>
-<li><p>命名的预定义集合 [[:xdigit:]] 十六进制数字 \\d数字 \\D非数字</p>
-</li>
-<li><p>比和̂$更灵活的锚点定义<br>例如：寻找一个数字串，但是要求这个数字串不许出现在”合计”两个字之后</p>
-</li>
-</ul>
-<h1 id="简单命令"><a href="#简单命令" class="headerlink" title="简单命令"></a>简单命令</h1><h2 id="普通用户和超级用户"><a href="#普通用户和超级用户" class="headerlink" title="普通用户和超级用户"></a>普通用户和超级用户</h2><ol>
-<li><p>新建用户:<code>adduser</code> /etc/password</p>
-</li>
-<li><p># 当前用户为超级用户</p>
-</li>
-<li><p>命令大小写敏感</p>
-</li>
-</ol>
-<h2 id="man查阅手册"><a href="#man查阅手册" class="headerlink" title="man查阅手册"></a>man查阅手册</h2><p>联机手册内容 各种命令的说明书 系统调用的使用手册<br>C语言和其它语言的库函数手册 系统配置文件格式  命令 命令：man<br>取自manual的前三个字母，最常用命令一般由两到三个字母构成<br>分页器：q-退出，空格-下一页， 上下箭头-上移下移 man 命令的用法 man<br>name man section name 章节编号：1命令 2系统调用 3库函数 5配置文件  man<br>-k regexp 列出关键字(keyword)与正则表达式regexp匹配的手册项目录 <br>手册页内容 列出基本功能和语法<br>对于C语言的函数调用，列出头文件和链接函数库 功能说明</p>
-<h2 id="date日期和时间"><a href="#date日期和时间" class="headerlink" title="date日期和时间"></a>date日期和时间</h2><p>读取系统日期和时间，命令date Wed Nov 7 21:09:16 CST 2018<br>可以根据需要定制输出格式 date \”+ 2018-11-07 21:09:54 Day 311 date \”+<br>1541596457 311指的是今天是今年的第311天，<br>格式控制字符串：第一个字符必须为+号， <br>Linux命令往往有很多选项和复杂的功能，通过man date查阅联机手册<br>通过NTP协议校对系统时间：命令 ntpdate ntpdate 0.pool.ntp.org<br>(设置时间，必须root用户) ntpdate —q 0.pool.ntp.org<br>(查询时间，普通用户也可</p>
-<h2 id="cal日历"><a href="#cal日历" class="headerlink" title="cal日历"></a>cal日历</h2><p>用法 cal cal year cal month year  用法举例 cal 打印当前月份的日历 cal<br>2020 打印2020年的日历 cal 10 2019 打印 2019年10月份的日历 cal 12<br>打印公元12年的日</p>
-<h2 id="bc计算器"><a href="#bc计算器" class="headerlink" title="bc计算器"></a>bc计算器</h2><p>功能强大 基本计算器功能<br>支持变量、函数，条件和循环等编程功能（类似C语言的小编程语言)<br>可以进行任意精度的计算  精度  缺省精度 bc 缺省精度为小数点后0位 bc<br>-l 缺省精度为小数点后20位 可以通过设置scale自行决定精度（小数点位数）<br>scale=10000 s(1.0) aaaaaaaaaaaaaaaaaaaaaaaaa</p>
-<h2 id="passwd修改口令"><a href="#passwd修改口令" class="headerlink" title="passwd修改口令"></a>passwd修改口令</h2><h2 id="文件"><a href="#文件" class="headerlink" title="文件"></a>文件</h2><h2 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h2><h3 id="文件系统的存储结构"><a href="#文件系统的存储结构" class="headerlink" title="文件系统的存储结构"></a>文件系统的存储结构</h3><p>文件系统的结构把整个逻辑设备以块(扇区)<br>为单位为划分，编号为0，1，2，...。<br>（每块512字节或其他更大$2^n$字节大小）</p>
-<p>   引导块  专用块   i节点区   文件存储区</p>
-<hr>
-<p>  : 扇区</p>
-<ul>
-<li><p>引导块(0号块)：用于启动系统，只有根文件系统的引导块有效</p>
-</li>
-<li><p>专用块(1号块)：也叫管理块，或者超级块</p>
-<ul>
-<li><p>存放文件系统的管理信息。</p>
-<p>如：文件系统的大小，i节点区的大小，空闲空间大小，空闲块链表的头等等</p>
-</li>
-<li><p>mkfs命令时初始化，df命令读出部分信息，df -i和df</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>节点区和文件存储区</p>
-<p>i节点区：i节点(index node，简记为i-node)</p>
-<p>i节点区由若干块构成，在mkfs命令创建文件系统时确定</p>
-<p>每块可容若干个i节点，每个i节点的大小是固定的（比如64字节）</p>
-<p>i节点从0开始编号，根据编号可以索引到磁盘块每个文件都对应一个i节点，i节点中的信息包括：</p>
-<ul>
-<li><p>指向文件存储区数据块的一些索引（index）指针（组成文件的逻辑块与硬盘的物理块之间的映射）</p>
-</li>
-<li><p>文件类型，属主，组，权限，link数，大小，时戳（i节点内不含文件名）</p>
-</li>
-</ul>
-<p>文件存储区</p>
-<p>用于存放文件数据的区域，包括目录表</p>
-
+        <h2 id="more-less：逐屏显示文件"><a href="#more-less：逐屏显示文件" class="headerlink" title="more/less：逐屏显示文件"></a>more/less：逐屏显示文件</h2>
+        
+          <a class="article-more-a" href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/#more">more >></a>
+        
       
 
       
@@ -317,7 +262,7 @@
 
       
         <p class="article-more-link">
-          <a class="article-more-a" href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E5%8F%8A%E5%A4%84%E7%90%86%E5%B7%A5%E5%85%B7/">展开全文 >></a>
+          <a class="article-more-a" href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/">展开全文 >></a>
         </p>
       
 
