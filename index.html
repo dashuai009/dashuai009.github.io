@@ -154,6 +154,68 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-linux-vim用法" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/">linux-vim用法</a>
+    </h1>
+  
+
+        
+        <a href="/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/" class="archive-article-date">
+  	<time datetime="2021-06-23T07:47:41.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-23</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-linux正则表达式" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -174,103 +236,10 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h1><ul>
-<li><p>非特殊字符与其自身匹配，如：正则表达式a与字符串a匹配, b与b，/与/</p>
-</li>
-<li><p>转义字符<code>\. \ \\ \$ \[</code></p>
-</li>
-<li><p>圆点<code>.</code>匹配任意单字符</p>
-</li>
-<li><p>在一对方括号之间的字符为集合的内容，<code>[abcd]</code>与a、b、c或d匹配</p>
-</li>
-<li><p>圆点,星号，反斜线在方括号内时，代表它们自己</p>
-<p>如:<code>[.]</code>可匹配3个单字符</p>
-</li>
-<li><p>用减号<code>-</code>定义一个区间</p>
-<ul>
-<li><p>如<code>[a-d] [A-Z] [a-zA-Z0-9]</code></p>
-</li>
-<li><p><code>[][]</code>集合含左右中括号两个字符</p>
-</li>
-<li><p>减号在最后，则失去表示区间的意义。<code>[ad-]</code>只与3个字符匹配</p>
-</li>
-</ul>
-</li>
-<li><p>用<code>^</code>表示补集</p>
-<ul>
-<li><p><code>^</code>在集合开头,则表示与集合内字符之外的任意字符匹配</p>
-<ul>
-<li><code>[^a-z]</code>匹配任一非小写字母 </li>
-<li><code>[^][]</code>匹配任一非中括号字符</li>
-<li><code>[^[]]</code></li>
-</ul>
-</li>
-<li><p><code>^</code>不在开头,则失去其表示补集的意义 </p>
-<ul>
-<li><code>[a-z^]</code>能匹配27个单字符</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>串结,如abc</p>
-<ul>
-<li><code>\[A-Z\].\[0-9\]</code></li>
-</ul>
-</li>
-<li><p>星号<code>*</code></p>
-<p><strong>单</strong>字符正则表达式后跟<code>*</code>，匹配此单字符正则表达式的<strong>0次或任意多次</strong>出现</p>
-</li>
-<li><p><code>$</code> 在尾部时有特殊意义，否则与其自身匹配</p>
-<ul>
-<li>123<code>$</code><br>匹配文件中行尾的123，不在行尾的123字符不匹配</li>
-<li><code>$123</code>与字符串<code>$123</code>匹配</li>
-<li><code>.$</code> 匹配行尾的任意字符</li>
-</ul>
-</li>
-<li><p><code>^</code>在首部时有特殊意义，否则与其自身匹配</p>
-<ul>
-<li><code>^printf</code>匹配行首的<code>printf</code>字符串，不在行首的<code>printf</code>串不匹配</li>
-<li><code>Hel^lo</code>与字符串<code>Hel^lo</code>匹配</li>
-<li>在vi中使用 :<code>10,50s/   //g</code>,<br>删除10-50行的每行行首的4个空格</li>
-</ul>
-</li>
-</ul>
-<h2 id="PCRE-Perl-compatible-regular-expression-改进了基本正则表达式（BRE）"><a href="#PCRE-Perl-compatible-regular-expression-改进了基本正则表达式（BRE）" class="headerlink" title="PCRE: Perl-compatible regular expression,改进了基本正则表达式（BRE）"></a>PCRE: Perl-compatible regular expression,改进了基本正则表达式（BRE）</h2><ul>
-<li>分组：圆括号<code>()</code><ul>
-<li><code>(xy)*</code>可匹配空字符串，<code>xy</code>，<code>xyxy</code>，<code>xyxyxy</code> </li>
-</ul>
-</li>
-<li><p>表示逻辑运算：表示逻辑”或” 的符号 <code>|</code></p>
-<ul>
-<li><code>(pink|green)</code> 与pink或green匹配</li>
-</ul>
-</li>
-<li><p>重复次数定义：与星号地位类似的+和?，限定重复次数 <code>\&#123;m,n\&#125;</code></p>
-<ul>
-<li><p><code>*</code>号表示它左边的单字符正则表达式的0次或多次重复</p>
-</li>
-<li><p><code>+</code>号表示1次或多次： <code>[0-9]+</code> 匹配长度至少为1数字串</p>
-</li>
-<li><p><code>?</code>表示0次或一次： <code>a?</code> 匹配零个或一个a</p>
-</li>
-<li><p>限定重复次数 <code>\&#123;m,n\&#125;</code>，例如：<code>[1-9][0-9]\&#123;6,8\&#125;</code> 7-9位数字，首位非0</p>
-</li>
-</ul>
-</li>
-<li><p>命名的预定义集合 </p>
-<ul>
-<li><code>[[:xdigit:]]</code> 十六进制数字 </li>
-<li><code>\d</code>数字 </li>
-<li><code>\D</code>非数字</li>
-</ul>
-</li>
-<li><p>比<code>^</code>和<code>$</code>更灵活的锚点定义</p>
-<ul>
-<li>例如：寻找一个数字串，但是要求这个数字串不许出现在”合计”两个字之后</li>
-</ul>
-</li>
-</ul>
-
+        <h1 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h1>
+        
+          <a class="article-more-a" href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/#more">more >></a>
+        
       
 
       
@@ -879,7 +848,7 @@ MathJax.Hub.Queue(function() {
         <ul class="search-ul">
           
             <li class="search-li">
-              <a href="https://blog.lucida.site/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>lucida</a>
+              <a href="http://blog.lucida.site/" target="_blank" class="search-title"><i class="icon-quo-left icon"></i>lucida</a>
             </li>
           
         </ul>

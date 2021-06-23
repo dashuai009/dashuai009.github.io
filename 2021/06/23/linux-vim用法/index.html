@@ -6,19 +6,16 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://dashuai009.github.io">
-  <title>linux文本文件及处理工具 | dashuai</title>
+  <title>linux-vim用法 | dashuai</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="more&#x2F;less：逐屏显示文件">
-<meta property="og:type" content="article">
-<meta property="og:title" content="linux文本文件及处理工具">
-<meta property="og:url" content="http://dashuai009.github.io/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/index.html">
+  <meta property="og:type" content="article">
+<meta property="og:title" content="linux-vim用法">
+<meta property="og:url" content="http://dashuai009.github.io/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/index.html">
 <meta property="og:site_name" content="dashuai">
-<meta property="og:description" content="more&#x2F;less：逐屏显示文件">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2021-06-23T02:02:16.000Z">
-<meta property="article:modified_time" content="2021-06-23T07:46:49.799Z">
+<meta property="article:published_time" content="2021-06-23T07:47:41.000Z">
+<meta property="article:modified_time" content="2021-06-23T07:47:42.003Z">
 <meta property="article:author" content="cjs">
-<meta property="article:tag" content="linux">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternative" href="/atom.xml" title="dashuai" type="application/atom+xml">
@@ -157,285 +154,27 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-linux文本文件相关命令" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-linux-vim用法" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      linux文本文件及处理工具
+      linux-vim用法
     </h1>
   
 
         
-        <a href="/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/" class="archive-article-date">
-  	<time datetime="2021-06-23T02:02:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-23</time>
+        <a href="/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/" class="archive-article-date">
+  	<time datetime="2021-06-23T07:47:41.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-23</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="more-less：逐屏显示文件"><a href="#more-less：逐屏显示文件" class="headerlink" title="more/less：逐屏显示文件"></a>more/less：逐屏显示文件</h2><span id="more"></span>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>操作</th>
-<th>效果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>空格</td>
-<td>显示下一屏</td>
-</tr>
-<tr>
-<td>回车</td>
-<td>上滚一行，当所感兴趣的段落内容正好处于当前屏的 尾部，另有一部分在下一页中时，可以连续按回车， 将感兴趣的部分滚动上来</td>
-</tr>
-<tr>
-<td>q      (quit)</td>
-<td>退出程序，后面的内容不再显示</td>
-</tr>
-<tr>
-<td>/pattern</td>
-<td>搜索指定模式的字符串，模式描述用正则表达式</td>
-</tr>
-<tr>
-<td>/</td>
-<td>继续查找指定模式的字符串</td>
-</tr>
-<tr>
-<td>h</td>
-<td>(Help)帮助信息。打印more命令的所有功能列表</td>
-</tr>
-<tr>
-<td>Ctrl-L</td>
-<td>屏幕刷新</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h2 id="what-is-less"><a href="#what-is-less" class="headerlink" title="what is less"></a>what is less</h2><p>less is more</p>
-<ul>
-<li><p>回退浏览的功能更强</p>
-</li>
-<li><p>可直接使键盘的上下箭头键，或者j,k，类似vi的光标定位键，以及PgUp，PgDn，Home，End键</p>
-</li>
-<li><p>有的Unix系统不提供less命令，但是可利用more命令的增强功能</p>
-</li>
-</ul>
-<h2 id="cat与od：列出文件内容"><a href="#cat与od：列出文件内容" class="headerlink" title="cat与od：列出文件内容"></a>cat与od：列出文件内容</h2><h2 id="head与tail：显示文件的头部或者尾部"><a href="#head与tail：显示文件的头部或者尾部" class="headerlink" title="head与tail：显示文件的头部或者尾部"></a>head与tail：显示文件的头部或者尾部</h2><h2 id="tee：三通"><a href="#tee：三通" class="headerlink" title="tee：三通"></a>tee：三通</h2><h2 id="wc：字计数"><a href="#wc：字计数" class="headerlink" title="wc：字计数"></a>wc：字计数</h2><h2 id="sort：对文件内容排序"><a href="#sort：对文件内容排序" class="headerlink" title="sort：对文件内容排序"></a>sort：对文件内容排序</h2><h2 id="tr：翻译字符"><a href="#tr：翻译字符" class="headerlink" title="tr：翻译字符"></a>tr：翻译字符</h2><h2 id="uniq：筛选文件中的重复行"><a href="#uniq：筛选文件中的重复行" class="headerlink" title="uniq：筛选文件中的重复行"></a>uniq：筛选文件中的重复行</h2><h2 id="grep（Global-regular-expression-print）：在文件中查找字符串"><a href="#grep（Global-regular-expression-print）：在文件中查找字符串" class="headerlink" title="grep（Global regular expression print）：在文件中查找字符串"></a>grep（Global regular expression print）：在文件中查找字符串</h2><h3 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h3><p>  grep  模式  文件名列表</p>
-<h3 id="grep-egrep-fgrep"><a href="#grep-egrep-fgrep" class="headerlink" title="grep/egrep/fgrep"></a>grep/egrep/fgrep</h3><ul>
-<li>egrep 使用扩展正则表达式ERE描述模式<br>  在指定模式方面比grep更灵活 </li>
-<li>fgrep 快速搜索指定字符串<br>  按字符串搜索而不是按模式搜索。</li>
-<li>grep选项</li>
-</ul>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>short</th>
-<th>long</th>
-<th>description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-F</td>
-<td>—fixed-strings</td>
-<td>Fixed strings (instead of regular expressions)</td>
-</tr>
-<tr>
-<td>-G</td>
-<td>—basic-regexp</td>
-<td>Basic regular expression (BRE)</td>
-</tr>
-<tr>
-<td>-E</td>
-<td>—extended-regexp</td>
-<td>Extended regular expression (ERE)</td>
-</tr>
-<tr>
-<td>-P</td>
-<td>—perl-regexp</td>
-<td>Perl-compatible regular expression (PCRE)</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>查PCRE语法：man pcresyntax</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-n</td>
-<td>显示时每行前面显示行号</td>
-</tr>
-<tr>
-<td>-v</td>
-<td>显示所有不包含模式的行</td>
-</tr>
-<tr>
-<td>-i</td>
-<td>字母比较时忽略字母的大小写</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h3><ul>
-<li><code>grep O_RDWR *.h</code></li>
-<li><code>ps -ef | grep liang</code></li>
-<li><code>ls -l / | grep &#39;^d&#39; | wc –l</code></li>
-<li><code>grep &#39;[0-9]*&#39;  shudu.c</code></li>
-<li><code>grep &#39;[0-9][0-9]*&#39;  shudu.c</code></li>
-<li><code>grep -n  main *.c</code> 查找含有正则表达式main的行，并打印行号<br>当文件数超过一个时，除了输出行号，还输出文件名</li>
-<li><code>grep -v &#39;[Dd]isable&#39; dev.stat&gt;dev.active</code><br>取消文件中所有含有指定模式的行，生成新文件</li>
-<li><code>grep -i richard telnos</code> 在文件中检索字符串richard，不顾字母的大小写</li>
-</ul>
-<h2 id="sed流编辑"><a href="#sed流编辑" class="headerlink" title="sed流编辑"></a>sed流编辑</h2><ul>
-<li>sed ‘命令’ 文件名列表</li>
-<li>sed –e ‘命令1’ –e ‘命令2’ –e ‘命令3’ 文件名列表</li>
-<li>sed -f 命令文件  文件名列表<br>举例：<br>tail -f pppd.log | sed ‘s/145.37.23.26/桥西/g’<br>tail -f pppd.log | sed -f sed.cmd<br>其中  sed.cmd 文件<br>s/145.37.23.26/桥西/g<br>s/102.157.23.109/柳荫街/g<br>s/145.37.123.57/大山子/g<br>cat pm25.txt | sed ‘s/[<sup><a href="#fn_" id="reffn_"></a></sup>[]*]//g’</li>
-</ul>
-<p>模式描述中增加(和)<br>在正则表达式中圆括号，仍然代表它自身,在正则表达式中出现的(和)不影响匹配操作<br>[a-zA-Z_][a-zA-Z0-9_]<em>-&gt;number<br>([a-zA-Z_][a-zA-Z0-9_]</em>)-&gt;number<br>替换字符串中的  \0 \1 \2 ……<br>举例<br>s/([a-zA-Z_][a-zA-Z0-9_]<em>)-&gt;number/\1-&gt;num/g<br>将日期格式“月-日-年”改为“年.月.日”<br>    比如：将  04-26-1997替换为1997.04.26使用命令:<br>s/([0-9][0-9])-([0-9][0-9])-([0-9][0-9]</em>)/\3.\1.\2/g<br>生成文件改名的命令<br>[快视频www.kuai-vdo.com]-电视剧《三国演义》中文字幕_1080p高清_央视1994版-69.rmvb<br>sed ‘s/.*-([0-9][0-9]).rmvb/mv \0 第\1集.rmvb/‘</p>
-<h2 id="awk：逐行扫描进行文本处理"><a href="#awk：逐行扫描进行文本处理" class="headerlink" title="awk：逐行扫描进行文本处理"></a>awk：逐行扫描进行文本处理</h2><p>用法</p>
-<ul>
-<li>awk ‘程序’ 文件名列表</li>
-<li>awk -f 程序文件名  文件名列表</li>
-</ul>
-<blockquote>
-<p>程序  条件｛动作｝</p>
-<p>一段程序：awk自动对每行文本执行条件判断，满足条件执行动作 （内置循环）</p>
-<p>多段程序：允许多段程序，程序间用空格或分号隔开</p>
-</blockquote>
-<p>处理方式</p>
-<ul>
-<li>(行)输入文件的每行作为一个“记录”，变量NR就是行号</li>
-<li>(列)每行用空格分隔开的部分，叫做记录的“域”<ul>
-<li>内置变量$1是第1域内容，依次，$2是第2域内容，……</li>
-<li>特别的，$0指的是整个这一行的内容<br>awk的处理为：符合条件的行，执行相应的动作</li>
-</ul>
-</li>
-</ul>
-<h3 id="awk描述的条件"><a href="#awk描述的条件" class="headerlink" title="awk描述的条件"></a>awk描述的条件</h3><ul>
-<li>使用与C语言类似的算数运算（加减乘除）</li>
-<li>使用与C语言类似的关系运算<br><code>&lt;       &lt;= ==  !=        &gt;         &gt;=</code></li>
-<li>使用与C语言类似的逻辑运算<br><code>||     &amp;&amp;    !</code></li>
-<li>正则表达式的模式匹配<br>/regexpr/ 包含该模式的行<br>正则表达式匹配运算符  <code>~    !~</code> 例如： <code>$2 ~  &quot;[1-9][0-9]*&quot;</code></li>
-<li>特殊的条件<ul>
-<li>不指定任何条件，对所有文本行执行动作</li>
-<li>BEGIN  开始处理所有文本行之前执行动作</li>
-<li>END     处理完所有文本行之后执行动作</li>
-</ul>
-</li>
-</ul>
-<h3 id="awk描述的动作"><a href="#awk描述的动作" class="headerlink" title="awk描述的动作"></a>awk描述的动作</h3><p>描述“动作”时，简单的用法有：</p>
-<ul>
-<li>自定义变量的赋值</li>
-<li>流程控制（与C语言类似）<ul>
-<li>条件判断 if</li>
-<li>循环控制 for</li>
-<li>表示程序块的{}</li>
-</ul>
-</li>
-<li>print 变量1， 变量2，……</li>
-<li>printf(”格式串”，变量1，变量2，……)</li>
-</ul>
-<h3 id="awk举例"><a href="#awk举例" class="headerlink" title="awk举例"></a>awk举例</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ps -ef | grep guest</span> </span><br><span class="line">   guest   669   668  0 11:27:13   ttyp1    00:00:00 -sh</span><br><span class="line">   guest   678   669  0 11:27:18   ttyp1    00:00:00 vi</span><br><span class="line"><span class="meta">$</span><span class="bash"> ps -ef | awk <span class="string">&#x27;/guest/&#123; printf(&quot;%s &quot;,$2); &#125;‘</span></span></span><br><span class="line">669 678</span><br><span class="line"><span class="meta">$</span><span class="bash"> awk <span class="string">&#x27;&#123;printf(&quot;%d: %s\n&quot;,NR,$0); &#125;&#x27;</span> test.c</span></span><br><span class="line">1: main()</span><br><span class="line">2: &#123;</span><br><span class="line">3:     printf(&quot;Hello!\n&quot;);</span><br><span class="line">4: &#125; </span><br><span class="line"><span class="meta">$</span><span class="bash"> date</span> </span><br><span class="line">Thu May 27 22:02:22 BEIDT 2004</span><br><span class="line"><span class="meta">$</span><span class="bash"> date | awk <span class="string">&#x27;&#123;print $4&#125;&#x27;</span></span></span><br><span class="line">22:02:42</span><br><span class="line"><span class="meta">$</span><span class="bash"> ls -s | awk <span class="string">&#x27;$1 &gt; 2000 &#123; print $2 &#125;&#x27;</span></span> </span><br><span class="line">disk.img</span><br><span class="line">document.pdf</span><br><span class="line">linux-src.tar.Z</span><br><span class="line">pppd.log</span><br></pre></td></tr></table></figure>
-<h2 id="两文件逐字节比较：cmp"><a href="#两文件逐字节比较：cmp" class="headerlink" title="两文件逐字节比较：cmp"></a>两文件逐字节比较：cmp</h2><h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><blockquote>
-<p>cmp file1 file2</p>
-<h3 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h3><ul>
-<li>逐字节比较两个文件是否完全相同</li>
-<li>两个文件完全相同时，不给出任何提示</li>
-<li>两个文件不同时，打印出第一个不同之处</li>
-<li>在Windows中有类似的命令COMP</li>
-</ul>
-</blockquote>
-<h2 id="md5sum-sha1sum-文件内容比较"><a href="#md5sum-sha1sum-文件内容比较" class="headerlink" title="md5sum/sha1sum:文件内容比较"></a>md5sum/sha1sum:文件内容比较</h2><ul>
-<li>使用MD5算法（散列函数）根据文件内容生成16字节hash值，比较hash值是否相同，就可断定两文件内容是否完全相同</li>
-<li>使用SHA-1算法的命令名为sha1sum (20字节hash值)</li>
-<li>常用于数据完整性（Data Integrity）验证和判断位于网络不同机器上的两个文件内容是否相同</li>
-<li>其他散列函数也可以用来完成这一任务: sha512sum</li>
-</ul>
-<h2 id="求出两个文件的差别：diff"><a href="#求出两个文件的差别：diff" class="headerlink" title="求出两个文件的差别：diff"></a>求出两个文件的差别：diff</h2><h2 id="用法-1"><a href="#用法-1" class="headerlink" title="用法"></a>用法</h2><blockquote>
-<p>diff file1 file2</p>
-<p>diff –u file1 file2</p>
-<h3 id="功能-1"><a href="#功能-1" class="headerlink" title="功能"></a>功能</h3><ul>
-<li>比较两个版本的文本文件，以寻找两者间差别</li>
-<li>输出格式 normal，unified (-u)</li>
-<li>normal格式：列出一个如何将file1转化为file2的指令<ul>
-<li>这些指令有a（Add），c（Change）和d（Delete） </li>
-<li>指令字母左边的行号是file1的行号，右面是file2的行号</li>
-<li>列出内容时，大于号后边的内容是需要在file1文件中增加的内容；小于号后边的内容是需从file1中删除的内容</li>
-</ul>
-</li>
-</ul>
-</blockquote>
-<h2 id="版本管理系统"><a href="#版本管理系统" class="headerlink" title="版本管理系统*"></a>版本管理系统*</h2><p>几种版本管理系统</p>
-<blockquote>
-<p>1975 SCCS</p>
-<p>1986 CVS （Concurrent Versions System）</p>
-<p>2001 SVN</p>
-<p>2005 GIT</p>
-</blockquote>
-<p>基本功能:</p>
-<ul>
-<li>对一个目录树(项目)下的文本文件(主要是源程序文件和脚本以及文档)进行版本管理</li>
-<li>便于多人合作开发的项目(一个代码库，多个现场)</li>
-<li>可以通过网络访问代码库</li>
-</ul>
-<h1 id="简单命令"><a href="#简单命令" class="headerlink" title="简单命令"></a>简单命令</h1><h2 id="普通用户和超级用户"><a href="#普通用户和超级用户" class="headerlink" title="普通用户和超级用户"></a>普通用户和超级用户</h2><ol>
-<li><p>新建用户:<code>adduser</code> /etc/password</p>
-</li>
-<li><p># 当前用户为超级用户</p>
-</li>
-<li><p>命令大小写敏感</p>
-</li>
-</ol>
-<h2 id="man查阅手册"><a href="#man查阅手册" class="headerlink" title="man查阅手册"></a>man查阅手册</h2><p>联机手册内容 各种命令的说明书 系统调用的使用手册<br>C语言和其它语言的库函数手册 系统配置文件格式  命令 命令：man<br>取自manual的前三个字母，最常用命令一般由两到三个字母构成<br>分页器：q-退出，空格-下一页， 上下箭头-上移下移 man 命令的用法 man<br>name man section name 章节编号：1命令 2系统调用 3库函数 5配置文件  man<br>-k regexp 列出关键字(keyword)与正则表达式regexp匹配的手册项目录 <br>手册页内容 列出基本功能和语法<br>对于C语言的函数调用，列出头文件和链接函数库 功能说明</p>
-<h2 id="date日期和时间"><a href="#date日期和时间" class="headerlink" title="date日期和时间"></a>date日期和时间</h2><p>读取系统日期和时间，命令date Wed Nov 7 21:09:16 CST 2018<br>可以根据需要定制输出格式 date \”+ 2018-11-07 21:09:54 Day 311 date \”+<br>1541596457 311指的是今天是今年的第311天，<br>格式控制字符串：第一个字符必须为+号， <br>Linux命令往往有很多选项和复杂的功能，通过man date查阅联机手册<br>通过NTP协议校对系统时间：命令 ntpdate ntpdate 0.pool.ntp.org<br>(设置时间，必须root用户) ntpdate —q 0.pool.ntp.org<br>(查询时间，普通用户也可</p>
-<h2 id="cal日历"><a href="#cal日历" class="headerlink" title="cal日历"></a>cal日历</h2><p>用法 cal cal year cal month year  用法举例 cal 打印当前月份的日历 cal<br>2020 打印2020年的日历 cal 10 2019 打印 2019年10月份的日历 cal 12<br>打印公元12年的日</p>
-<h2 id="bc计算器"><a href="#bc计算器" class="headerlink" title="bc计算器"></a>bc计算器</h2><p>功能强大 基本计算器功能<br>支持变量、函数，条件和循环等编程功能（类似C语言的小编程语言)<br>可以进行任意精度的计算  精度  缺省精度 bc 缺省精度为小数点后0位 bc<br>-l 缺省精度为小数点后20位 可以通过设置scale自行决定精度（小数点位数）<br>scale=10000 s(1.0) aaaaaaaaaaaaaaaaaaaaaaaaa</p>
-<h2 id="passwd修改口令"><a href="#passwd修改口令" class="headerlink" title="passwd修改口令"></a>passwd修改口令</h2><h2 id="文件"><a href="#文件" class="headerlink" title="文件"></a>文件</h2><h2 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h2><h3 id="文件系统的存储结构"><a href="#文件系统的存储结构" class="headerlink" title="文件系统的存储结构"></a>文件系统的存储结构</h3><p>文件系统的结构把整个逻辑设备以块(扇区)<br>为单位为划分，编号为0，1，2，...。<br>（每块512字节或其他更大$2^n$字节大小）</p>
-<p>   引导块  专用块   i节点区   文件存储区</p>
-<hr>
-<p>  : 扇区</p>
-<ul>
-<li><p>引导块(0号块)：用于启动系统，只有根文件系统的引导块有效</p>
-</li>
-<li><p>专用块(1号块)：也叫管理块，或者超级块</p>
-<ul>
-<li><p>存放文件系统的管理信息。</p>
-<p>如：文件系统的大小，i节点区的大小，空闲空间大小，空闲块链表的头等等</p>
-</li>
-<li><p>mkfs命令时初始化，df命令读出部分信息，df -i和df</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>节点区和文件存储区</p>
-<p>i节点区：i节点(index node，简记为i-node)</p>
-<p>i节点区由若干块构成，在mkfs命令创建文件系统时确定</p>
-<p>每块可容若干个i节点，每个i节点的大小是固定的（比如64字节）</p>
-<p>i节点从0开始编号，根据编号可以索引到磁盘块每个文件都对应一个i节点，i节点中的信息包括：</p>
-<ul>
-<li><p>指向文件存储区数据块的一些索引（index）指针（组成文件的逻辑块与硬盘的物理块之间的映射）</p>
-</li>
-<li><p>文件类型，属主，组，权限，link数，大小，时戳（i节点内不含文件名）</p>
-</li>
-</ul>
-<p>文件存储区</p>
-<p>用于存放文件数据的区域，包括目录表</p>
-
+        
       
 
       
@@ -464,17 +203,6 @@
     <div class="article-info article-info-index">
       
       
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
       
 
       
@@ -525,7 +253,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=http://dashuai009.github.io/2021/06/23/linux%E6%96%87%E6%9C%AC%E6%96%87%E4%BB%B6%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=http://dashuai009.github.io/2021/06/23/linux-vim%E7%94%A8%E6%B3%95/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -539,18 +267,9 @@
   
 <nav id="article-nav">
   
-    <a href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" id="article-nav-newer" class="article-nav-link-wrap">
-      <i class="icon-circle-left"></i>
-      <div class="article-nav-title">
-        
-          linux正则表达式
-        
-      </div>
-    </a>
   
-  
-    <a href="/2021/04/20/musicPlayer/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">a simple music player developed with Android Studio</div>
+    <a href="/2021/06/23/linux%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">linux正则表达式</div>
       <i class="icon-circle-right"></i>
     </a>
   
