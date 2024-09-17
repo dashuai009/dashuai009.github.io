@@ -7,6 +7,7 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
 	site: 'https://dashuai009.github.io',
 	integrations: [mdx(), sitemap(), typst()],
+	base: '/',
 	vite:{
 		ssr: {
 			external: ["@myriaddreamin/typst-ts-node-compiler"],
