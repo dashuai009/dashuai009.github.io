@@ -1,10 +1,15 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
-
+import { typst } from 'astro-typst';
 import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://example.com',
-	integrations: [mdx(), sitemap()],
+	site: 'https://dashuai009.github.io',
+	integrations: [mdx(), sitemap(), typst()],
+	vite:{
+		ssr: {
+			external: ["@myriaddreamin/typst-ts-node-compiler"],
+		}
+	}
 });

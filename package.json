@@ -10,11 +10,13 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.3",
     "@astrojs/mdx": "^3.1.5",
     "@astrojs/rss": "^4.0.7",
     "@astrojs/sitemap": "^3.1.6",
+    "@myriaddreamin/typst-ts-node-compiler": "^0.5.0-rc7",
     "astro": "^4.15.3",
-    "@astrojs/check": "^0.9.3",
+    "astro-typst": "^0.6.0",
     "typescript": "^5.5.4"
   }
 }
