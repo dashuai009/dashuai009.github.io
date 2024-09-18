@@ -1,8 +1,13 @@
+#let date = datetime(
+  year: 2022,
+  month: 10,
+  day: 4,
+)
 #metadata((
   "title": "2020ccpc-Weihai威海-D-ABC_Conjecture",
   "author": "dashuai009",
   description: "",
-  pubDate: "'Jul 08 2022'",
+  pubDate: date.display(),
   subtitle: [CCPC, 数论],
 ))<frontmatter>
 
@@ -10,11 +15,6 @@
 #show: conf
 
 
-#let date = datetime(
-  year: 2022,
-  month: 10,
-  day: 4,
-)
 
 #date.display();
 
