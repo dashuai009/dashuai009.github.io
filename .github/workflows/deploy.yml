@@ -20,6 +20,12 @@ jobs:
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v4
+      - name: Install fonts
+        run: |
+          mkdir ~/.fonts
+          cp ./public/typst-fonts/*.ttf ~/.fonts/
+          cp ./public/typst-fonts/*.otf ~/.fonts/
+          fc-cache -fv
       - name: Install, build, and upload your site
         uses: withastro/action@v3
         # with:
