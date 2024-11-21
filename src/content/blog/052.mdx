@@ -1,12 +1,10 @@
 ---
-title: 'My First Blog Post'
-pubDate: 2022-07-01
-description: "This is the first post of my new Astro blog."
-author: "Astro Learner"
+title: 'error LNK2019: unresolved external symbol 的另一种原因：MSVC的mangling导致'
+pubDate: 2024-11-21
+description: "c++中sturct/class的前置声明如果混用，会导致mangling出问题，引起LNK2019"
+author: "dashuai009"
 tags: ["astro", "blogging", "learning in public"]
 ---
-
-
 
 
 ## 问题背景
@@ -127,6 +125,8 @@ C:\Users\15258\work\mangle_error\build\Debug\link_error.exe : fatal error LNK112
 msvc确实给出两个编译warning和一个error，*在我们的项目中由于海量的warning，完全没有注意到这个事情*。
 
 注意，bar.cpp和main.cpp的两处include顺序也比较玄学，如果颠倒其中一处，error会消失，同时颠倒两处include不会出现这个问题。
+
+本地测试过wsl的gcc，没有编译错误，听群里大佬说“能混用前置声明的struct/class，msvc的特殊mangling的问题”
 
 可以dump一下bar.obj看看导出的符号：`dumpbin.exe /SYMBOLS .\build\link_error.dir\Debug\bar.obj`
 
