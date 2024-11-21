@@ -1,0 +1,356 @@
+---
+title: 'My First Blog Post'
+pubDate: 2022-07-01
+description: "This is the first post of my new Astro blog."
+author: "Astro Learner"
+tags: ["astro", "blogging", "learning in public"]
+---
+
+
+
+
+## 问题背景
+
+今天又又又遇到了`LNK 2019`但是死活没找到原因。
+
+简单来说，有一个`struct A`，在另一个文件中前置声明为了`class A`，其他文件如果include顺序再玄学一点，就会出现`LNK2019`。
+
+
+问题出现的条件：
+- `MSVC`编译器。
+- 混用了struct/class的前置声明。
+- include顺序比较玄学。
+
+
+最简单的解决方案是从第二点。由于项目需要和项目比较庞大，第一点和第三点无法简单生效。
+
+看个例子
+
+`foo.h`的代码如下，Foo是个struct
+```cpp
+#pragma once
+
+struct Foo {
+  int width;
+  int height;
+};
+```
+
+`bar.h`的代码如下，`struct Foo` 被前置声明为 `class`，后续有函数用到了`Foo`。
+```cpp
+#pragma once
+
+class Foo;
+
+class Bar {
+public:
+  Bar(const Foo& fo);
+
+  int width;
+};
+```
+
+
+`bar.cpp`的代码如下，注意这里的include顺序
+```cpp
+#include "foo.h"
+#include "bar.h"
+
+Bar::Bar(const Foo &f) : width(f.width) {}
+```
+
+`main.cpp`的代码如下，注意这里的include顺序
+```cpp
+#include "bar.h"
+#include "foo.h"
+#include <iostream>
+
+
+int main() {
+  Foo f;
+  f.width = 998244353;
+  Bar b(f);
+  std::cout << b.width << '\n';
+  return 0;
+}
+```
+
+```cmake
+cmake_minimum_required(VERSION 3.0)
+project(link_error CXX)
+
+add_executable(link_error bar.h foo.h bar.cpp main.cpp)
+```
+使用CMake编译运行
+
+```
+cmake -B .\build\ --build
+cmake --build ./build
+```
+
+就会遇到如下错误
+
+```
+MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
+
+  bar.cpp
+C:\Users\15258\work\mangle_error\bar.h(3,7): warning C4099: 'Foo': type name first seen using 'struct' now seen using 'class' [C:\Users\15258\work\mangle_error\build\link
+_error.vcxproj]
+  (compiling source file '../bar.cpp')
+      C:\Users\15258\work\mangle_error\foo.h(3,8):
+      see declaration of 'Foo'
+
+  link_error.vcxproj -> C:\Users\15258\work\mangle_error\build\Debug\link_error.exe
+PS C:\Users\15258\work\mangle_error> cmake --build ./build
+MSBuild version 17.11.9+a69bbaaf5 for .NET Framework
+
+  bar.cpp
+  main.cpp
+C:\Users\15258\work\mangle_error\bar.h(3,7): warning C4099: 'Foo': type name first seen using 'struct' now seen using 'class' [C:\Users\15258\work\mangle_error\build\link
+_error.vcxproj]
+  (compiling source file '../bar.cpp')
+      C:\Users\15258\work\mangle_error\foo.h(3,8):
+      see declaration of 'Foo'
+
+C:\Users\15258\work\mangle_error\foo.h(3,8): warning C4099: 'Foo': type name first seen using 'class' now seen using 'struct' [C:\Users\15258\work\mangle_error\build\link
+_error.vcxproj]
+  (compiling source file '../main.cpp')
+      C:\Users\15258\work\mangle_error\foo.h(3,8):
+      see declaration of 'Foo'
+
+  Generating Code...
+main.obj : error LNK2019: unresolved external symbol "public: __cdecl Bar::Bar(class Foo const &)" (??0Bar@@QEAA@AEBVFoo@@@Z) referenced in function main [C:\Users\15258\
+work\mangle_error\build\link_error.vcxproj]
+C:\Users\15258\work\mangle_error\build\Debug\link_error.exe : fatal error LNK1120: 1 unresolved externals [C:\Users\15258\work\mangle_error\build\link_error.vcxproj]
+```
+
+msvc确实给出两个编译warning和一个error，*在我们的项目中由于海量的warning，完全没有注意到这个事情*。
+
+注意，bar.cpp和main.cpp的两处include顺序也比较玄学，如果颠倒其中一处，error会消失，同时颠倒两处include不会出现这个问题。
+
+可以dump一下bar.obj看看导出的符号：`dumpbin.exe /SYMBOLS .\build\link_error.dir\Debug\bar.obj`
+
+```
+File Type: COFF OBJECT
+
+COFF SYMBOL TABLE
+000 0105854B ABS    notype       Static       | @comp.id
+001 80010190 ABS    notype       Static       | @feat.00
+002 00000003 ABS    notype       Static       | @vol.md
+003 00000000 SECT1  notype       Static       | .drectve
+    Section length   30, #relocs    0, #linenums    0, checksum        0
+005 00000000 SECT2  notype       Static       | .debug$S
+    Section length  2A8, #relocs    4, #linenums    0, checksum        0
+007 00000000 SECT3  notype       Static       | .text$mn
+    Section length   20, #relocs    0, #linenums    0, checksum 2E748664
+009 00000000 SECT3  notype ()    External     | ??0Bar@@QEAA@AEBUFoo@@@Z (public: __cdecl Bar::Bar(struct Foo const &))
+00A 00000000 UNDEF  notype ()    External     | _RTC_InitBase
+00B 00000000 UNDEF  notype ()    External     | _RTC_Shutdown
+00C 00000000 SECT3  notype       Label        | $LN3
+00D 00000000 SECT4  notype       Static       | .xdata
+    Section length    8, #relocs    0, #linenums    0, checksum 86016890
+00F 00000000 SECT4  notype       Static       | $unwind$??0Bar@@QEAA@AEBUFoo@@@Z
+010 00000000 SECT5  notype       Static       | .pdata
+    Section length    C, #relocs    3, #linenums    0, checksum F9766256
+012 00000000 SECT5  notype       Static       | $pdata$??0Bar@@QEAA@AEBUFoo@@@Z
+013 00000000 SECT6  notype       Static       | .rtc$IMZ
+    Section length    8, #relocs    1, #linenums    0, checksum        0, selection    2 (pick any)
+015 00000000 SECT6  notype       Static       | _RTC_InitBase.rtc$IMZ
+016 00000000 SECT7  notype       Static       | .rtc$TMZ
+    Section length    8, #relocs    1, #linenums    0, checksum        0, selection    2 (pick any)
+018 00000000 SECT7  notype       Static       | _RTC_Shutdown.rtc$TMZ
+019 00000000 SECT8  notype       Static       | .debug$T
+    Section length   64, #relocs    0, #linenums    0, checksum        0
+01B 00000000 SECT9  notype       Static       | .chks64
+    Section length   48, #relocs    0, #linenums    0, checksum        0
+
+String Table Size = 0xA6 bytes
+
+  Summary
+
+          48 .chks64
+         2A8 .debug$S
+          64 .debug$T
+          30 .drectve
+           C .pdata
+           8 .rtc$IMZ
+           8 .rtc$TMZ
+          20 .text$mn
+           8 .xdata
+```
+
+通过对比error中的`??0Bar@@QEAA@AEBVFoo@@@Z`不同于obj中的 `??0Bar@@QEAA@AEBUFoo@@@Z`，只有一个字符的差别。看不懂也没关系，编译器和dump都给出了解释`public: __cdecl Bar::Bar(class Foo const &)`和`public: __cdecl Bar::Bar(struct Foo const &)`。这时候终于发现是class不同于struct。而Foo实际应该是struct。
+
+我比较喜欢全局搜一些东西，搜Foo的时候，有点印象Foo应该是struct。这才发现有地方写成了`class Foo`。唉，不管warning的要命。
+
+## error LNK2019: unresolved external symbol
+
+
+这里列一下error lnk2019的其他可能，复制自gpt。
+
+
+**`LNK2019: unresolved external symbol`** 是一个常见的链接错误，表示链接器找不到某个符号（函数、变量等）的定义。通常发生在编译阶段通过了，但链接阶段失败。
+
+---
+
+### **错误的本质**
+- **编译器**：将代码翻译为中间代码（如 `.obj` 文件）。
+- **链接器**：将所有 `.obj` 文件及库文件链接成可执行文件或动态链接库。
+
+`LNK2019` 表示：
+- **声明**了一个符号（函数、变量等），但链接器找不到它的实现（定义）。
+
+---
+
+### **常见原因及解决方法**
+
+#### **1. 函数或变量未定义**
+**原因**：
+- 函数或变量的声明（如 `extern` 或头文件中声明）存在，但实现缺失。
+
+**解决方法**：
+- 确保提供了函数或变量的实现。
+  ```cpp
+  // 声明 (通常在头文件)
+  void myFunction();
+
+  // 定义 (通常在 .cpp 文件)
+  void myFunction() {
+      // Implementation
+  }
+  ```
+
+---
+
+#### **2. 忘记链接目标文件或库**
+**原因**：
+- 编译的 `.cpp` 文件未包含在项目中，或未链接所需的库。
+
+**解决方法**：
+- 确保 `.cpp` 文件包含在项目中：
+  - 检查 **项目设置**，确认所有相关源文件已加入项目。
+- 如果使用第三方库：
+  - 确保在项目设置中正确添加库路径和库文件：
+    - 在 **Visual Studio** 中：
+      - **配置属性** → **链接器** → **输入** → **附加依赖项**。
+      - 添加所需的 `.lib` 文件。
+
+---
+
+#### **3. 函数名或符号修饰不匹配**
+**原因**：
+- C++ 的 **符号修饰（Name Mangling）** 不一致。可能发生于以下情况：
+  - 声明和定义的参数列表不匹配。
+  - 函数声明为 `extern "C"`，但定义未加修饰。
+  - 链接库与项目的编译器调用约定不同。
+
+**解决方法**：
+- 确保声明与定义的函数签名完全一致。
+  ```cpp
+  // 声明
+  extern "C" void myFunction();
+
+  // 定义
+  extern "C" void myFunction() {
+      // Implementation
+  }
+  ```
+
+---
+
+#### **4. 缺少模板定义**
+**原因**：
+- 如果使用模板类或函数，声明在头文件中，但实现没有在头文件中定义。
+
+**解决方法**：
+- 将模板实现移到头文件中。
+  ```cpp
+  // 在头文件中：
+  template<typename T>
+  void myFunction(T value) {
+      // Implementation
+  }
+  ```
+
+---
+
+#### **5. 静态库或动态库缺失**
+**原因**：
+- 链接器找不到提供符号实现的 `.lib` 或 `.dll` 文件。
+
+**解决方法**：
+- 确保已添加必要的库文件路径：
+  - **配置属性** → **VC++ 目录** → **库目录**。
+  - **配置属性** → **链接器** → **输入** → **附加依赖项**。
+  - 添加相关的 `.lib` 文件。
+
+---
+
+#### **6. 调用约定不匹配**
+**原因**：
+- 函数声明和定义的调用约定（如 `__stdcall`, `__cdecl`）不同。
+
+**解决方法**：
+- 明确声明和定义使用相同的调用约定：
+  ```cpp
+  void __stdcall myFunction(); // 声明
+  void __stdcall myFunction() { // 定义
+      // Implementation
+  }
+  ```
+
+---
+
+#### **7. 编译器设置不一致**
+**原因**：
+- 编译器版本或设置不匹配，例如编译器优化、C++ 标准等。
+
+**解决方法**：
+- 确保所有源文件使用相同的编译器和设置。
+- 在 Visual Studio 中，检查：
+  - **C/C++** → **语言** → **C++ 标准**。
+  - 确保链接的库与项目的编译器兼容。
+
+---
+
+### **常见示例**
+#### **示例 1：函数未定义**
+**错误代码**：
+```cpp
+// main.cpp
+void myFunction(); // 声明
+int main() {
+    myFunction(); // 调用
+}
+```
+**解决方法**：
+在某个 `.cpp` 文件中定义 `myFunction`：
+```cpp
+void myFunction() {
+    // 实现
+}
+```
+
+---
+
+#### **示例 2：忘记链接库**
+**错误代码**：
+```cpp
+#include <cmath>
+int main() {
+    double result = sin(3.14); // 使用了数学库
+}
+```
+**解决方法**：
+在链接器中添加 `libm.lib`（Windows 下默认 `msvcrt.lib` 已包含）。
+
+---
+
+### **排查步骤**
+1. 确认符号是否已定义，定义的源文件是否加入项目。
+2. 检查函数签名、调用约定是否一致。
+3. 确认第三方库是否已正确链接。
+4. 如果涉及模板，确保实现位于头文件中。
+5. 查看错误符号具体内容（如 `dumpbin` 工具分析 `.obj` 文件中的符号表）。
+
+通过这些方法，可以有效解决 `LNK2019` 错误。
