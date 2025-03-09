@@ -9,6 +9,71 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 <html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			/* 全局布局样式 */
+			body {
+				display: flex;
+				flex-direction: column;
+				min-height: 100vh;
+				margin: 0;
+			}
+			
+			main {
+				flex: 1;
+				max-width: 720px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+				width: 100%;
+				box-sizing: border-box;
+			}
+
+			/* Footer 样式优化 */
+			footer {
+				margin-top: auto;
+				padding: 2rem 1rem 1rem;
+				background: linear-gradient(var(--gray-gradient)) no-repeat;
+				color: rgb(var(--gray));
+				text-align: center;
+				position: relative;
+				box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+			}
+
+			.social-links {
+				display: flex;
+				justify-content: center;
+				gap: 1.5rem;
+				margin-top: 1.5rem;
+			}
+
+			.social-links a {
+				transition: transform 0.2s ease;
+				display: inline-flex;
+				padding: 0.5rem;
+				border-radius: 50%;
+			}
+
+			.social-links a:hover {
+				transform: translateY(-2px);
+				background: rgba(var(--accent), 0.1);
+			}
+
+			.social-links svg {
+				width: 24px;
+				height: 24px;
+			}
+
+			.sr-only {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				padding: 0;
+				margin: -1px;
+				overflow: hidden;
+				clip: rect(0, 0, 0, 0);
+				white-space: nowrap;
+				border: 0;
+			}
+		</style>
 	</head>
 	<body>
 		<Header />

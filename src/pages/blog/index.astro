@@ -17,70 +17,53 @@ const posts = (await getCollection('blog')).sort(
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
 			main {
-				width: 960px;
+				max-width: 720px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
 			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
+			.post-list {
+				list-style: none;
 				padding: 0;
+				margin: 0;
 			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
+			.post-item {
+				padding: 1.5rem 0;
+				border-bottom: 1px solid rgba(var(--gray), 0.1);
 				transition: 0.2s ease;
 			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
+			.post-item:first-child {
+				padding-top: 0;
 			}
-			ul li:first-child img {
-				width: 100%;
+			.post-item:hover {
+				background: rgba(var(--accent), 0.03);
 			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
+			.post-link {
+				text-decoration: none;
+				color: inherit;
 				display: block;
 			}
-			.title {
-				margin: 0;
+			.post-title {
+				font-size: 1.5rem;
+				margin: 0 0 0.5rem;
 				color: rgb(var(--black));
-				line-height: 1;
+				transition: 0.2s ease;
 			}
-			.date {
+			.post-date {
+				font-size: 0.9rem;
+				color: rgba(var(--gray), 0.8);
 				margin: 0;
-				color: rgb(var(--gray));
 			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
+			.post-excerpt {
+				margin: 0.5rem 0 0;
+				color: rgba(var(--black), 0.8);
+				line-height: 1.6;
 			}
 			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
+				main {
+					padding: 1rem;
 				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
+				.post-title {
+					font-size: 1.25rem;
 				}
 			}
 		</style>
@@ -88,23 +71,21 @@ const posts = (await getCollection('blog')).sort(
 	<body>
 		<Header />
 		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.slug}/`}>
-									<img width={720} height={360} src={post.data.heroImage} alt="" />
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
+			<ul class="post-list">
+				{posts.map((post) => (
+					<li class="post-item">
+						<a href={`/blog/${post.slug}/`} class="post-link">
+							<h3 class="post-title">{post.data.title}</h3>
+							<p class="post-date">
+								<FormattedDate date={post.data.pubDate} />
+							</p>
+							{post.data.description && (
+								<p class="post-excerpt">{post.data.description}</p>
+							)}
+						</a>
+					</li>
+				))}
+			</ul>
 		</main>
 		<Footer />
 	</body>
