@@ -1,0 +1,178 @@
+---
+title: 'c++20中显式的lambda模板参数列表'
+pubDate: 2024-11-21
+description: "c++20中可以显示支持lambda的模板参数列表，用以改进lambda的实用性"
+author: "dashuai009"
+tags: ["c++20", "lambda"]
+---
+
+
+## 问题介绍
+
+想临时写个lambda函数，但lambda函数需要是模板化的，而且模板化的参数既不是输入参数也不是输出参数，只是中间过程需要用到的一个类型。这时候需要用到“c++20中的显式模板参数列表”。
+
+先简单写一个结构体，具有类型擦除的特性。
+
+```cpp
+struct Value {
+    int _type = 1;         // 0 for char, 1 for int
+    void *_data = nullptr; // the length of _data array is 10.
+};
+```
+
+`Value`类型内部通过一个`_type`来枚举 `_data` 存储的数据类型。
+这里用0表示char数组，1表示int数组。其他值可以留作他用。
+
+`_data` 表示 `_type`类型的数据，为了简化问题，这里是长度为10的数组，也就是要么是`char [10]`要么是`int [10]`。
+
+后续我们会介绍四个函数， 一个初始化`init`函数，初始化Value的_data数组。三个用于数组批量加上一个整数的函数`add1`、`add2`和`add3`。
+
+
+## 一个“普通”的lambda：init
+
+为了初始化`Value`类型的`_data`，
+我们希望用`T* init(T d)`返回一个长度为10的、初始值都为d的指针，
+可以写成如下lambda：
+
+```cpp
+auto init = [](auto d) {
+    auto x = new decltype(d)[10];
+    for (int i = 0; i < 10; ++i) {
+        x[i] = d;
+    }
+    return x;
+};
+```
+
+
+ok，没啥问题，这是个用auto模板化的lambda。
+
+初始化的整个代码如下：
+
+```cpp
+// ...
+
+int main() {
+    auto init = [](auto d) {
+        auto x = new decltype(d)[10];
+        for (int i = 0; i < 10; ++i) {
+            x[i] = d;
+        }
+        return x;
+    };
+
+    Value v{._type = 0, ._data = nullptr};
+
+    if (v._type == 0) {
+        v._data = (void *)init(42);
+    } else if (v._type == 1) {
+        v._data = (void *)init('a');
+    } else {
+        std::abort();
+    }
+    // ...
+}
+```
+
+## 一个不普通的的lambda和对应的模板函数
+
+
+现在我们希望通过一个add函数，给Value的每个元素加上一个标量。
+那么可以将”加“的逻辑抽象出来，不然每个_type用if判断一下，就要复制一遍代码。
+
+先来用add1表示都加上1，这是一个普通的模板函数。
+
+```cpp
+template <typename T> void add1(Value data10) {
+    T *x = (T *)data10._data;
+    for (int i = 0; i < 10; ++i) {
+        x[i] += 1;
+        std::cout << x[i] << ' ';
+    }
+    std::cout << '\n';
+}
+```
+
+前边的模板参数T只是针对函数内部某处逻辑上用到的。既不是函数的返回参数，也不是输入参数。
+
+普通模板函数没有太大问题。但是这函数可能只会集中在_type是数组的if大法里，这也是我遇到的问题，需要判断这个类型擦除的数据是不是数组，如果是数组则执行add的逻辑，所以希望这个add函数能够离if大法比较近，一眼就能看完lambda的逻辑，而不是跳来跳去。
+
+但是写lambda会遇到问题，这时不太能用auto来表示模板参数。T既不是入参也不是返回参数。
+通过询问万能的群友，我们可以用一个固定输入为nullptr或者别的什么的参数，通过输入参数表示这个中间用到的模板参数T。
+代码如下：
+
+```cpp
+auto add2 = [](const Value &data10, auto *_null) {
+    auto *x = (decltype(_null))data10._data;
+    for (int i = 0; i < 10; ++i) {
+        x[i] += 2;
+        std::cout << x[i] << ' ';
+    }
+    std::cout << '\n';
+};
+```
+
+最后一个_null表示一个指针，但是不会在运行时用到他的值，只是在编译期间传递入参的类型信息。
+函数体第一行`auto *x = (decltype(_null))data10._data;`用到了这个参数。
+
+比如调用时
+
+```
+if (v._type == 1) {
+    add1<char>(v);
+    add2(v, (char *)nullptr);
+}
+```
+
+用`(char *)nullptr`来指示需要特化的lambda模板。
+
+## 最后一个lambda
+
+总感觉这个问题还有naiive的方案。搜了一下auto表示lambda的模板参数竟然是c++14的东西，而不是20的，所以c++20对lambda更新了什么？
+
+然后找到了[How to provide template arguments to a lambda with a call operator template](https://stackoverflow.com/questions/50713214/how-to-provide-template-arguments-to-a-lambda-with-a-call-operator-template)
+
+就有了如下代码，c++20的lambda的`[]`和`()`之间可以写`<>`了。
+
+```cpp
+auto add3 = []<typename T>(const Value &data10) {
+    auto *x = (T *)data10._data;
+    for (int i = 0; i < 10; ++i) {
+        x[i] += 3;
+        std::cout << x[i] << ' ';
+    }
+    std::cout << '\n';
+};
+```
+
+调用时需要写的比较长，也好理解，lambda其实是匿名函数对象，是个对象，不是狭义上的函数。
+
+```cpp
+if (v._type == 0) {
+    add1<int>(v);
+    add3.template operator()<int>(v);
+}
+```
+
+## 完整代码
+
+[https://godbolt.org/z/f5zYbzj35](https://godbolt.org/z/f5zYbzj35)
+
+上边是完整的一个代码，可以修改第27行，
+
+```
+Value v{._type = 1, ._data = nullptr};
+```
+改为
+```
+Value v{._type = 1, ._data = nullptr};
+```
+可以得到int数组的结果。
+
+## 参考内容
+
+上边这些内容能解决我的问题了，lambda其他的内容也没有深入研究，列一下参考的链接吧
+
+1. [How to provide template arguments to a lambda with a call operator template](https://stackoverflow.com/questions/50713214/how-to-provide-template-arguments-to-a-lambda-with-a-call-operator-template)
+2. [Lambda expressions (since C++11)](https://en.cppreference.com/w/cpp/language/lambda)
+3. [c++20 The Complete guide 第11章lambda表达式](https://github.com/xiaoweiChen/CXX20-The-Complete-Guide)
