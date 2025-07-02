@@ -1,12 +1,12 @@
 ---
-import BaseHead from '../../components/BaseHead.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getCollection } from 'astro:content';
-import FormattedDate from '../../components/FormattedDate.astro';
+import BaseHead from "../../components/BaseHead.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
+import { getCollection } from "astro:content";
+import FormattedDate from "../../components/FormattedDate.astro";
 
-const posts = (await getCollection('blog')).sort(
+const posts = (await getCollection("blog")).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 ---
@@ -17,9 +17,12 @@ const posts = (await getCollection('blog')).sort(
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
 			main {
-				max-width: 720px;
-				margin: 0 auto;
+				max-width: 1024px;
+				margin: 2em auto;
 				padding: 2rem 1rem;
+				background: rgb(252, 252, 252);
+				border-radius: 6px;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 			}
 			.post-list {
 				list-style: none;
@@ -72,19 +75,23 @@ const posts = (await getCollection('blog')).sort(
 		<Header />
 		<main>
 			<ul class="post-list">
-				{posts.map((post) => (
-					<li class="post-item">
-						<a href={`/blog/${post.slug}/`} class="post-link">
-							<h3 class="post-title">{post.data.title}</h3>
-							<p class="post-date">
-								<FormattedDate date={post.data.pubDate} />
-							</p>
-							{post.data.description && (
-								<p class="post-excerpt">{post.data.description}</p>
-							)}
-						</a>
-					</li>
-				))}
+				{
+					posts.map((post) => (
+						<li class="post-item">
+							<a href={`/blog/${post.slug}/`} class="post-link">
+								<h3 class="post-title">{post.data.title}</h3>
+								<p class="post-date">
+									<FormattedDate date={post.data.pubDate} />
+								</p>
+								{post.data.description && (
+									<p class="post-excerpt">
+										{post.data.description}
+									</p>
+								)}
+							</a>
+						</li>
+					))
+				}
 			</ul>
 		</main>
 		<Footer />

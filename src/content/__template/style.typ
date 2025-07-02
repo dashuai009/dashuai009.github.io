@@ -13,6 +13,5 @@
 
   set text(font: ( "Noto Sans SC", "Source Han Sans"), lang: "zh", region: "cn")
   set par(leading: 1em)
-  set page(width: 35em, height: auto, margin: 0.5em)
   doc
 }

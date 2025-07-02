@@ -1,0 +1,6 @@
+{
+    "tinymist.fontPaths": [
+        "${workspaceFolder}/public/fonts",
+        "${workspaceFolder}/public/typst-fonts"
+    ]
+}

@@ -53,7 +53,9 @@ $ frac(x, 1 - x - x^2) = sum_(n gt.eq 0) x^n 1 / sqrt(5) ((frac(1 + sqrt(5), 2))
 
 == 指数生产成函数(exponential generating function，EGF)
 <指数生产成函数exponential-generating-functionegf>
-$ hat(F) (x) = sum_(n gt.eq 0) a_n frac(x^n, n !) $ \#\#\# 运算
+$ hat(F) (x) = sum_(n gt.eq 0) a_n frac(x^n, n !) $ 
+
+=== 运算
 
 $
   hat(F) (x) hat(G) (x) & = sum_(i gt.eq 0) a_i frac(x^i, i !) sum_(j gt.eq 0) b_j frac(x^j, j !)\
