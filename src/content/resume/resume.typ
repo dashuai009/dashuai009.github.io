@@ -13,14 +13,12 @@
 #import "../__template/style.typ": conf
 #show: conf
 
-=dashuai009
+= dashuai009
 
 == 教育背景
-- 某大学 · 2018-2022
+- BUPT · 2018-2022
 
 == 技能
 - C++
 - Rust
 
-== 经验
-- 在多个开源项目中贡献代码
