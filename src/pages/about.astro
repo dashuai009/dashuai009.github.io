@@ -1,17 +1,14 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import { getEntry } from 'astro:content';
+import BlogPost from '../layouts/BlogPost.astro';
+
+const resume = await getEntry('resume', 'resume');
+if (!resume) {
+        throw new Error('Resume content not found');
+}
+const { Content } = await resume.render();
 ---
 
-<Layout
-	title="About Me"
-	description="About dashuai009"
-	pubDate={new Date('August 08 2024')}
->
-	<p>
-		dashuai009
-	</p>
-
-	<p>
-		I'm interested in c++ and rust.
-	</p>
-</Layout>
+<BlogPost {...resume.data}>
+        <Content />
+</BlogPost>
