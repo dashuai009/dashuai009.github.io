@@ -14,12 +14,17 @@
 
 == backup
 
-Replace git:// with https://
-Rewrite any git:// urls to be https:// but, it won't touch sshurls (git@github.com:)
+Replace `git://` with `https://`
+Rewrite any `git://` urls to be `https://` but, it won't touch sshurls (`git@github.com:`)
 
+```
 git config --global url."https://github".insteadOf git://github
+```
+
 or replace with ssh
-Use ssh instead of https://
 
+Use ssh instead of `https://`
 
+```
 git config --global url."git@github.com:".insteadOf "https://github.com/"
+```
