@@ -1,0 +1,12 @@
+---
+import PostPage from "../../components/PostPage.astro";
+import MainGridLayout from "../../layouts/MainGridLayout.astro";
+import { getSortedPosts } from "../../utils/content-utils";
+
+const posts = await getSortedPosts();
+const page = { data: posts };
+---
+
+<MainGridLayout title="文章" description="dashuai009 的全部文章">
+	<PostPage page={page} />
+</MainGridLayout>

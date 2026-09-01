@@ -1,0 +1,19 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import MyPDFViewer from "../components/MyPDFViewer/MyPDFViewer";
+---
+
+<MainGridLayout title="PBRT v4 中文翻译" description="PBRT v4 中文翻译项目与在线 PDF 阅读">
+	<section class="card-base rounded-[var(--radius-large)] overflow-hidden px-6 md:px-9 py-7">
+		<div class="text-sm font-bold tracking-widest text-[var(--primary)] mb-2">PHYSICALLY BASED RENDERING</div>
+		<h1 class="text-3xl md:text-4xl font-bold text-90 mb-3">PBRT v4 中文翻译</h1>
+		<p class="text-75 leading-7 mb-5">面向中文读者的 PBRT v4 翻译项目。你可以直接在线阅读 PDF，或前往 GitHub 查看翻译进度与源文件。</p>
+		<div class="flex flex-wrap gap-3 mb-7">
+			<a class="btn-regular rounded-lg h-11 px-5 font-bold" href="https://github.com/dashuai009/pbrt-v4-zh" target="_blank" rel="noopener noreferrer">GitHub 项目</a>
+			<a class="btn-regular rounded-lg h-11 px-5 font-bold" href="/pbrt-v4-cn.pdf" target="_blank">下载 PDF</a>
+		</div>
+		<div class="rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+			<MyPDFViewer input_file="pbrt-v4-cn.pdf" client:only="react" />
+		</div>
+	</section>
+</MainGridLayout>

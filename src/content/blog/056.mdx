@@ -1,0 +1,257 @@
+---
+title: 'katex-wasm'
+pubDate: 2026-3-5
+description: "katex-wasm 项目的背景、用法与测试实践"
+author: "dashuai009"
+tags: ["Rust", "WebAssembly", "KaTeX"]
+---
+
+
+
+# 从 JavaScript 到 Rust：katex-wasm 项目的背景、用法与测试实践
+
+[katex-wasm](https://dashuai009.github.io/katex-wasm/) 
+
+
+在前端数学公式渲染领域，KaTeX 一直是一个非常实用的方案。它以速度快、渲染效果稳定著称，被广泛用于文档系统、在线编
+辑器、教育平台和技术博客中。katex-wasm 的目标，则是在这个成熟能力之上，尝试走出另一条路线: 用 Rust 重写核心渲染
+逻辑，并通过 WebAssembly 在浏览器中运行。
+
+这个项目本质上是一个 KaTeX 的 Rust WASM 移植版本。它希望把原本由 JavaScript 完成的 LaTeX 数学公式解析与渲染流
+程，迁移到 Rust 侧实现，再以 WebAssembly 的形式提供给 Web 页面使用。这样做的意义不只是“换一种语言重写”，更重要的
+是验证 Rust 在解析器、渲染引擎、跨端复用和工程化交付上的能力。对于需要更强类型约束、可维护性，或者希望将渲染逻辑
+复用于本地工具链的场景，这种尝试很有价值。
+
+## 项目背景与定位
+
+katex-wasm 可以理解为一个“Rust + WebAssembly 版 KaTeX”。它保留了 KaTeX 的核心目标: 将 LaTeX 数学表达式转换为浏览
+器可展示的 HTML（以及相关结构），但实现路径转向了 Rust。
+
+相比单纯封装原版 KaTeX，这个项目的特点在于它同时覆盖了几种使用形态:
+
+- 浏览器端直接渲染到 DOM 节点
+- 输出 HTML 字符串，便于嵌入前端框架或服务端拼接
+- 提供本地 CLI，支持批量渲染公式文件
+
+这意味着它不只是一个“能跑在浏览器里的 wasm 包”，也是一个带有本地调试、批处理和对比验证能力的工程化项目。
+
+从架构上看，项目大致延续了 KaTeX 的核心处理链路:
+
+- parse/ 负责 LaTeX 解析
+- build/ 负责从解析树构建 DOM/标记结构
+- dom_tree/ 提供虚拟 DOM 能力
+- mathML_tree/ 负责 MathML 树生成
+- settings/ 管理渲染配置
+- symbols/、metrics/ 等模块提供符号和字体度量支持
+
+这类分层也决定了项目不只是“暴露几个 API”，而是已经具备相对完整的公式渲染引擎雏形。
+
+## 对外能力与核心 API
+
+当前项目对外暴露的能力比较清晰，主要集中在几个入口函数上。
+
+浏览器/WASM 侧最核心的两个接口是:
+
+- render(expression, base_node, options)：直接把公式渲染到指定 DOM 节点
+- renderToString(expression, settings)：返回渲染后的 HTML 字符串
+
+Rust 侧则保留了纯 Rust 可调用的能力，例如:
+
+- render_to_string(expression, settings)：返回 HTML 字符串
+- render_to_dom_tree(...)：适合更高级的自定义输出场景
+
+这套 API 设计很务实。对于前端集成方，最常见的需求是“直接渲染”或“返回字符串”；对于 Rust 侧开发者，则可以直接复用
+底层渲染逻辑，而不必强依赖 JS 环境。
+
+另外，项目在错误处理上也做了比较实用的设计。遇到非法公式时，可以根据配置选择:
+
+- 直接抛错
+- 降级输出带错误样式的节点或 HTML 片段
+
+这使得它更适合接入真实业务，而不是只停留在实验性质的 demo。
+
+## 如何构建与运行
+
+### 1. 构建 WASM 包
+
+项目使用 wasm-pack 作为标准构建入口。最基本的构建命令是:
+
+wasm-pack build
+
+如果要生成更适合发布的优化版本，可以使用:
+
+wasm-pack build --release
+
+从工程配置来看，项目已经针对发布场景做了体积优化，例如 cdylib、opt-level = "s"、lto = true，这些都符合 WASM 包体
+积敏感的常见需求。
+
+### 2. 本地运行 Demo
+
+仓库内提供了一个 demo 目录，用于在浏览器中验证渲染效果。典型流程如下:
+
+wasm-pack build
+cd demo
+npm install
+npm start
+
+这里有一个实际开发中很重要的点: demo 通过 file:../pkg 直接依赖根目录构建出来的 wasm 包，因此每次修改 Rust 代码
+后，都需要重新执行一次 wasm-pack build，否则前端不会拿到最新构建产物。
+
+### 3. 使用 CLI 进行批量渲染
+
+除了浏览器侧使用方式，项目还提供了一个非常实用的 CLI 工具 katex-rs-cli。它支持读取一个文本文件，并按行渲染其中的
+公式，适合做本地调试、批量验证、覆盖率采样等工作。
+
+常见用法如下:
+
+cargo run --bin katex-rs-cli -- tests/fixtures/formulas.txt
+
+如果只想渲染某一段范围:
+
+cargo run --bin katex-rs-cli -- tests/fixtures/formulas.txt 1 5
+
+如果只关心最终汇总，不看逐条输出:
+
+cargo run --bin katex-rs-cli -- tests/fixtures/formulas.txt 1 5 --summary-only
+
+如果想关闭并行渲染:
+
+cargo run --bin katex-rs-cli -- tests/fixtures/formulas.txt 1 5 --multi-threaded false
+
+这个 CLI 的价值不只是“命令行版渲染器”，更重要的是它把项目从单纯的前端 wasm 包扩展成了一个可调试、可批处理、可做
+分析的开发工具。
+
+## 测试与正确性验证
+
+对于这种“复刻已有成熟库”的项目来说，最大的挑战不是“能跑”，而是“行为是否尽量对齐原版”。katex-wasm 在这方面采用了
+比较务实的测试思路。
+
+### 1. 常规测试入口
+
+项目文档中给出了两个基础测试入口:
+
+cargo test
+
+以及:
+
+wasm-pack test --headless --firefox
+
+前者面向 Rust 侧测试，后者是 WASM 场景下的浏览器无头测试入口。当前仓库里可以看到基础测试代码和 wasm-bindgen-test
+依赖，说明项目已经为浏览器测试预留了标准路径。
+
+不过从当前状态看，这部分还不算特别完整，更适合描述为“已有测试入口和基础用例”，而不是“已经形成一整套完善的自动化
+测试矩阵”。
+
+### 2. JS 与 Rust 的差异对比: diff_harness
+
+这个项目目前最有代表性的验证工具，其实是 tests/diff_harness.mjs。
+
+它的思路很直接:
+
+- 读取一组 LaTeX 公式
+- 分别调用原版 JS KaTeX 和 Rust WASM 版本进行渲染
+- 对比两边的 HTML 输出
+- 输出逐条结果和最终汇总
+
+使用方式如下:
+
+wasm-pack build && node --experimental-wasm-modules tests/diff_harness.mjs tests/fixtures/formulas.txt
+
+也可以指定范围和日志级别:
+
+wasm-pack build && node --experimental-wasm-modules tests/diff_harness.mjs tests/fixtures/formulas.txt 1 5
+--log-level summary
+
+这类 diff harness 对移植项目非常重要。因为在“复刻”类工作里，单元测试只能覆盖局部逻辑，真正能说明问题的是: 面对同
+一输入，Rust 版本的行为与 JS 版本是否一致。
+
+值得一提的是，这个工具并不是做“完全字符串零容忍比较”。它对部分 em 单位数值误差做了容忍处理，这也符合跨实现中浮点
+和格式细节可能略有差异的现实情况。换句话说，它关注的是“表达含义和渲染结果是否等价”，而不是机械追求字符级完全一
+致。
+
+## 覆盖率测试: 有方案，但仍偏手工
+
+“覆盖率测试”是很多项目介绍里容易被写得过满的部分。就 katex-wasm 当前状态而言，更准确的说法是:
+
+- 仓库已经提供了覆盖率采集说明
+- 可以在本地生成 Rust 代码覆盖率报告
+- 但这套流程目前还是手工执行为主，尚未形成 CI 自动化闭环
+
+项目中已经有一份专门的文档，说明如何通过 katex-rs-cli 驱动覆盖率统计。核心思路是:
+
+1. 使用 RUSTFLAGS="-Cinstrument-coverage" 编译插桩版本
+2. 通过 katex-rs-cli 跑一批公式样本
+3. 生成 .profraw 数据
+4. 用 llvm-profdata 合并
+5. 用 llvm-cov 输出终端摘要或 HTML 报告
+
+典型流程类似这样:
+
+RUSTFLAGS="-Cinstrument-coverage" \
+CARGO_INCREMENTAL=0 \
+LLVM_PROFILE_FILE="coverage/katex-rs-cli-%p-%m.profraw" \
+CARGO_TARGET_DIR="target/coverage" \
+cargo run --bin katex-rs-cli -- tests/fixtures/formulas.txt 1 200
+
+然后再用 LLVM 工具生成报告。
+
+这种方案的优点是非常贴近真实代码路径。因为它不是只靠零散单元测试覆盖逻辑，而是通过批量渲染真实公式，让解析器、构
+建器、错误处理和部分渲染路径一起被执行到。
+
+但也要如实说明它当前的边界:
+
+- 还没有看到固定的自动化脚本被纳入仓库主流程
+- 还没有稳定的、持续更新的“官方覆盖率基线”
+- CI 工作流目前主要用于 demo 构建与部署，不包含覆盖率采集步骤
+
+所以更准确的表述应该是: 项目已经具备本地覆盖率统计能力，并且有清晰文档；但覆盖率体系还处于“可用、可执行、待进一
+步自动化”的阶段。
+
+## 工程化方面的亮点
+
+如果把这个项目当作一个工程实践来看，除了“Rust 重写 KaTeX”本身，还有几个值得单独写进博客的亮点。
+
+第一是多入口交付。它既能作为浏览器中的 wasm 包使用，也能通过 CLI 做本地渲染和验证，这比单一库形态更实用。
+
+第二是部署链路比较完整。仓库已经配置了 GitHub Pages 的 demo 部署流程，支持在推送到 main 后自动构建并发布。对于展
+示型项目来说，这能明显降低体验门槛，也有助于外部验证。
+
+第三是对发布场景做了明确优化。Rust 的 profile 配置已经针对 wasm 体积和发布形态做了处理，这说明项目作者不仅关
+注“功能能不能跑”，也在意“产物是否适合真正交付”。
+
+第四是与原版 KaTeX 的对照意识很强。仓库中保留了 KaTeX/ 目录和差异对比工具，这种做法很符合“复刻项目”的正确姿势:
+修复 Rust 逻辑前，先确认 JS 对应行为，而不是凭直觉改。
+
+## 目前阶段的价值与下一步方向
+
+就当前状态而言，katex-wasm 已经具备了一个原型级到工程验证级项目的主要特征:
+
+- 有明确的目标和边界
+- 有核心渲染链路
+- 有浏览器和 CLI 两种使用路径
+- 有基础测试和跨实现对比工具
+- 有本地覆盖率采集方案
+- 有 demo 和自动部署能力
+
+它最适合的定位，不是宣传成“已经完整替代原版 KaTeX 的生产级实现”，而是一个正在持续推进的 Rust/WASM 移植工程。它的
+价值在于:
+
+- 验证 Rust 在复杂前端基础库移植中的可行性
+- 为后续性能分析、功能补齐和行为对齐提供工程基础
+- 为类似“用 Rust 复刻成熟 JS 库”的实践提供参考样本
+
+如果后续继续演进，我认为几个方向会很关键:
+
+1. 扩充系统化测试用例，尤其是 wasm 场景下的自动化测试。
+2. 把 diff_harness 纳入更稳定的回归流程，而不只是开发期手工执行。
+3. 将覆盖率采集脚本化，并接入 CI，形成长期可追踪的质量指标。
+4. 持续补齐与原版 KaTeX 的行为差异，优先保证语义一致，再考虑输出细节完全对齐。
+
+## 结语
+
+katex-wasm 是一个很典型、也很有代表性的 Rust WebAssembly 项目: 它不是为了“把某段 JS 机械翻译成 Rust”，而是借一个
+成熟场景，验证 Rust 在解析、渲染、跨端调用和工程化能力上的整体表现。
+
+从当前仓库状态来看，这个项目已经不仅仅是一个技术尝试。它已经有了可运行的构建链路、可验证的对比工具、可使用的
+CLI、可生成的覆盖率报告，以及可展示的 demo。对于关注 Rust、WebAssembly、前端基础设施，或者对“如何复刻一个成熟 JS
+库”感兴趣的开发者来说，这都是一个值得持续跟进的项目。
