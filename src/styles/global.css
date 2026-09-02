@@ -43,6 +43,11 @@ body {
 	line-height: 1.7;
 }
 
+:root.dark body {
+	background: var(--page-bg) no-repeat;
+	background-size: 100% 100%;
+}
+
 h1,
 h2,
 h3,
