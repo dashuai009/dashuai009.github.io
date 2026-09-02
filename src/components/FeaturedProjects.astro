@@ -1,0 +1,259 @@
+---
+import { Icon } from "astro-icon/components";
+
+const projects = [
+	{
+		name: "PBRT v4 中文翻译",
+		type: "RENDERING · TRANSLATION",
+		description:
+			"面向中文读者的 PBRT v4 翻译项目，持续整理物理渲染知识与在线 PDF 阅读体验。",
+		icon: "material-symbols:auto-stories-outline-rounded",
+		tone: "pbrt",
+		tags: ["PBRT", "Rendering", "Typst"],
+		primary: { label: "在线阅读", url: "/pbrt-v4-zh/", external: false },
+		secondary: {
+			label: "GitHub",
+			url: "https://github.com/dashuai009/pbrt-v4-zh",
+			external: true,
+		},
+	},
+	{
+		name: "katex-wasm",
+		type: "RUST · WEBASSEMBLY",
+		description:
+			"用 Rust 重写 KaTeX 核心能力，并通过 WebAssembly 在浏览器中提供高性能数学公式渲染。",
+		icon: "material-symbols:functions-rounded",
+		tone: "katex",
+		tags: ["Rust", "WebAssembly", "KaTeX"],
+		primary: {
+			label: "在线体验",
+			url: "https://dashuai009.github.io/katex-wasm/",
+			external: true,
+		},
+		secondary: {
+			label: "项目文章",
+			url: "/blog/056/",
+			external: false,
+		},
+	},
+] as const;
+---
+
+<section id="projects" class="project-section onload-animation" aria-labelledby="projects-title">
+	<div class="section-heading">
+		<div>
+			<div class="section-kicker">SELECTED WORK</div>
+			<h1 id="projects-title">精选项目</h1>
+			<p>正在持续维护的翻译、渲染与 WebAssembly 项目。</p>
+		</div>
+		<a class="github-link" href="https://github.com/dashuai009" target="_blank" rel="noopener noreferrer">
+			全部项目
+			<Icon name="fa6-solid:arrow-up-right-from-square" />
+		</a>
+	</div>
+
+	<div class="project-grid">
+		{projects.map((project) => (
+			<article class={`card-base project-card ${project.tone}`}>
+				<div class="project-topline">
+					<div class="project-icon" aria-hidden="true">
+						<Icon name={project.icon} />
+					</div>
+					<span class="project-status"><span></span>持续维护</span>
+				</div>
+				<div class="project-copy">
+					<div class="project-type">{project.type}</div>
+					<h2>{project.name}</h2>
+					<p>{project.description}</p>
+				</div>
+				<div class="project-tags" aria-label={`${project.name} 技术标签`}>
+					{project.tags.map((tag) => <span>{tag}</span>)}
+				</div>
+				<div class="project-actions">
+					<a
+						class="project-button primary"
+						href={project.primary.url}
+						target={project.primary.external ? "_blank" : undefined}
+						rel={project.primary.external ? "noopener noreferrer" : undefined}
+					>
+						{project.primary.label}
+						<Icon name={project.primary.external ? "fa6-solid:arrow-up-right-from-square" : "material-symbols:chevron-right-rounded"} />
+					</a>
+					<a
+						class="project-button"
+						href={project.secondary.url}
+						target={project.secondary.external ? "_blank" : undefined}
+						rel={project.secondary.external ? "noopener noreferrer" : undefined}
+					>
+						{project.secondary.label}
+					</a>
+				</div>
+			</article>
+		))}
+	</div>
+</section>
+
+<style>
+	.project-section {
+		scroll-margin-top: 5.5rem;
+		margin-bottom: 1rem;
+	}
+	.section-heading {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1.25rem;
+		margin-bottom: 1rem;
+		padding: 0.25rem 0.5rem;
+	}
+	.section-kicker {
+		margin-bottom: 0.35rem;
+		color: var(--primary);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+	}
+	h1 {
+		margin: 0;
+		color: rgb(0 0 0 / 0.9);
+		font-size: 2rem;
+		font-weight: 800;
+		line-height: 1.25;
+	}
+	:global(.dark) h1 { color: rgb(255 255 255 / 0.9); }
+	.section-heading p {
+		margin: 0.35rem 0 0;
+		color: rgb(0 0 0 / 0.5);
+		font-size: 0.86rem;
+	}
+	:global(.dark) .section-heading p { color: rgb(255 255 255 / 0.5); }
+	.github-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex: 0 0 auto;
+		padding: 0.6rem 0.8rem;
+		border-radius: 0.65rem;
+		color: var(--primary);
+		font-size: 0.82rem;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background-color 0.2s ease;
+	}
+	.github-link:hover { background: var(--btn-plain-bg-hover); }
+	.github-link :global(svg) { width: 0.78rem; height: 0.78rem; }
+	.project-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+	.project-card {
+		position: relative;
+		display: flex;
+		min-height: 22rem;
+		flex-direction: column;
+		gap: 1.15rem;
+		padding: 1.5rem;
+		border: 1px solid var(--line-divider);
+		box-shadow: 0 12px 30px rgb(36 45 102 / 0.08);
+	}
+	.project-card::before {
+		content: "";
+		position: absolute;
+		inset: 0 0 auto;
+		height: 0.24rem;
+		background: var(--project-accent);
+	}
+	.project-card.pbrt { --project-accent: linear-gradient(90deg, oklch(0.7 0.14 225), oklch(0.68 0.18 275)); }
+	.project-card.katex { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 175), oklch(0.66 0.17 235)); }
+	.project-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+	.project-icon {
+		display: grid;
+		width: 3.25rem;
+		height: 3.25rem;
+		place-items: center;
+		border-radius: 0.9rem;
+		background: var(--btn-regular-bg);
+		color: var(--primary);
+		font-size: 1.75rem;
+	}
+	.project-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.42rem;
+		color: rgb(0 0 0 / 0.42);
+		font-size: 0.72rem;
+		font-weight: 700;
+	}
+	:global(.dark) .project-status { color: rgb(255 255 255 / 0.42); }
+	.project-status span {
+		width: 0.48rem;
+		height: 0.48rem;
+		border-radius: 999px;
+		background: oklch(0.72 0.16 150);
+		box-shadow: 0 0 0 0.22rem oklch(0.72 0.16 150 / 0.12);
+	}
+	.project-copy { flex: 1; }
+	.project-type {
+		margin-bottom: 0.4rem;
+		color: var(--primary);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+	}
+	.project-copy h2 {
+		margin: 0 0 0.65rem;
+		color: rgb(0 0 0 / 0.88);
+		font-size: 1.42rem;
+		font-weight: 800;
+	}
+	:global(.dark) .project-copy h2 { color: rgb(255 255 255 / 0.88); }
+	.project-copy p {
+		margin: 0;
+		color: rgb(0 0 0 / 0.55);
+		font-size: 0.84rem;
+		line-height: 1.72;
+	}
+	:global(.dark) .project-copy p { color: rgb(255 255 255 / 0.55); }
+	.project-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+	.project-tags span {
+		padding: 0.28rem 0.55rem;
+		border-radius: 0.48rem;
+		background: var(--btn-regular-bg);
+		color: var(--btn-content);
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+	.project-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+	.project-button {
+		display: inline-flex;
+		min-height: 2.65rem;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		padding: 0.55rem 0.8rem;
+		border-radius: 0.65rem;
+		background: var(--btn-regular-bg);
+		color: var(--btn-content);
+		font-size: 0.78rem;
+		font-weight: 800;
+		text-decoration: none;
+		transition: transform 0.18s ease, background-color 0.18s ease;
+	}
+	.project-button:hover { transform: translateY(-2px); background: var(--btn-regular-bg-hover); }
+	.project-button.primary { background: var(--primary); color: white; }
+	.project-button.primary:hover { filter: brightness(1.05); }
+	.project-button :global(svg) { width: 0.8rem; height: 0.8rem; }
+
+	@media (max-width: 720px) {
+		.project-grid { grid-template-columns: 1fr; }
+		.project-card { min-height: 19rem; }
+	}
+	@media (max-width: 520px) {
+		.section-heading { align-items: start; }
+		.section-heading p { max-width: 18rem; }
+		.github-link { padding-inline: 0.35rem; }
+		h1 { font-size: 1.65rem; }
+		.project-card { min-height: auto; padding: 1.25rem; }
+	}
+</style>
