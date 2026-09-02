@@ -35,6 +35,10 @@ export const siteConfig: SiteConfig = {
 export const navBarConfig: NavBarConfig = {
 	links: [
 		LinkPreset.Home,
+		{
+			name: "项目",
+			url: "/#projects",
+		},
 		LinkPreset.Archive,
 		{
 			name: "PBRT",
