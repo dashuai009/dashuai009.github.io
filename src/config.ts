@@ -38,10 +38,6 @@ export const navBarConfig: NavBarConfig = {
 			url: "/#projects",
 		},
 		LinkPreset.Archive,
-		{
-			name: "PBRT",
-			url: "/pbrt-v4-zh",
-		},
 		LinkPreset.About,
 		{
 			name: "GitHub",
