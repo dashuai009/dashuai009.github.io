@@ -11,29 +11,32 @@
 			<span class="language">C++23</span>
 		</div>
 
-		<div class="editor">
-			<div class="code-row">
-				<span class="line-number">1</span>
-				<span class="typed typed-include"><b>#include</b> <em>&lt;print&gt;</em></span>
+		<div class="terminal-body">
+			<div class="editor">
+				<div class="code-row">
+					<span class="line-number">1</span>
+					<span class="typed typed-import"><b>import</b> <em>std</em>;</span>
+				</div>
+				<div class="code-row blank-row"><span class="line-number">2</span></div>
+				<div class="code-row">
+					<span class="line-number">3</span>
+					<span class="typed typed-main"><b>int</b> main() {`{`}</span>
+				</div>
+				<div class="code-row">
+					<span class="line-number">4</span>
+					<span class="typed typed-print">&nbsp;&nbsp;&nbsp;&nbsp;<em>std::println</em>(<q>Hello, world!</q>);</span>
+				</div>
+				<div class="code-row">
+					<span class="line-number">5</span>
+					<span class="typed typed-brace">}</span>
+				</div>
 			</div>
-			<div class="code-row blank-row"><span class="line-number">2</span></div>
-			<div class="code-row">
-				<span class="line-number">3</span>
-				<span class="typed typed-main"><b>int</b> main() {`{`}</span>
-			</div>
-			<div class="code-row">
-				<span class="line-number">4</span>
-				<span class="typed typed-print">&nbsp;&nbsp;&nbsp;&nbsp;<em>std::println</em>(<q>Hello, world!</q>);</span>
-			</div>
-			<div class="code-row">
-				<span class="line-number">5</span>
-				<span class="typed typed-brace">}</span>
-			</div>
-		</div>
 
-		<div class="output-line">
-			<span class="prompt">›</span>
-			<span>Hello, world!</span>
+			<div class="output-panel">
+				<span class="output-label">OUTPUT</span>
+				<span class="run-command"><i></i> ./hello</span>
+				<span class="output-result"><b>›</b> Hello, world!</span>
+			</div>
 		</div>
 	</div>
 </div>
@@ -73,7 +76,7 @@
 
 	.terminal {
 		position: relative;
-		width: min(35rem, calc(100% - 2rem));
+		width: min(52rem, calc(100% - 2rem));
 		overflow: hidden;
 		border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
 		border-radius: 1.1rem;
@@ -115,6 +118,11 @@
 		color: var(--primary);
 		font-weight: 750;
 		letter-spacing: 0.08em;
+	}
+
+	.terminal-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1.8fr) minmax(12rem, 1fr);
 	}
 
 	.editor {
@@ -166,8 +174,8 @@
 	:global(.dark) .typed b { color: oklch(0.76 0.14 335); }
 	:global(.dark) .typed q { color: oklch(0.76 0.12 155); }
 
-	.typed-include {
-		animation: type-include 11s steps(16, end) infinite, caret-include 11s step-end infinite;
+	.typed-import {
+		animation: type-import 11s steps(11, end) infinite, caret-import 11s step-end infinite;
 	}
 
 	.typed-main {
@@ -182,29 +190,57 @@
 		animation: type-brace 11s step-end infinite, caret-brace 11s step-end infinite;
 	}
 
-	.output-line {
+	.output-panel {
 		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		min-height: 2.55rem;
-		padding: 0.6rem 1.25rem;
-		border-top: 1px solid var(--line-divider);
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.7rem;
+		min-width: 0;
+		padding: 1.1rem 1.35rem;
+		border-left: 1px solid var(--line-divider);
 		background: color-mix(in oklab, var(--btn-regular-bg) 38%, transparent);
 		font-family: "JetBrains Mono Variable", "SFMono-Regular", Consolas, monospace;
-		font-size: 0.72rem;
+	}
+
+	.output-label {
+		color: var(--primary);
+		font-size: 0.58rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		opacity: 0.72;
+	}
+
+	.run-command {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.67rem;
+		opacity: 0.34;
+	}
+
+	.run-command i {
+		width: 0.38rem;
+		height: 0.38rem;
+		border-radius: 50%;
+		background: oklch(0.72 0.15 150);
+		box-shadow: 0 0 0 0.2rem oklch(0.72 0.15 150 / 0.12);
+	}
+
+	.output-result {
+		font-size: 0.75rem;
 		opacity: 0;
 		animation: show-output 11s ease infinite;
 	}
 
-	.prompt { color: var(--primary); font-size: 1rem; font-weight: 800; }
+	.output-result b { color: var(--primary); font-size: 0.95rem; }
 
-	@keyframes type-include {
+	@keyframes type-import {
 		0%, 4% { width: 0; }
-		19%, 96% { width: 16ch; }
+		19%, 96% { width: 11ch; }
 		98%, 100% { width: 0; }
 	}
 
-	@keyframes caret-include {
+	@keyframes caret-import {
 		0%, 3%, 20%, 100% { border-right-color: transparent; }
 		4%, 19% { border-right-color: currentColor; }
 	}
@@ -251,18 +287,28 @@
 	@media (max-width: 520px) {
 		.terminal { width: calc(100% - 1rem); border-radius: 0.9rem; transform: translateY(1.8rem); }
 		.terminal-bar { padding-inline: 0.8rem; }
+		.terminal-body { grid-template-columns: 1fr; }
 		.editor { padding-inline: 0.65rem; }
 		.line-number { width: 1.75rem; flex-basis: 1.75rem; padding-right: 0.55rem; }
-		.output-line { padding-inline: 0.9rem; }
+		.output-panel {
+			min-height: 2.8rem;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			padding: 0.55rem 0.9rem;
+			border-top: 1px solid var(--line-divider);
+			border-left: 0;
+		}
+		.run-command { margin-left: auto; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.code-banner { transition: none; }
 		.typed { border-right-color: transparent; animation: none; }
-		.typed-include { width: 16ch; }
+		.typed-import { width: 11ch; }
 		.typed-main { width: 12ch; }
 		.typed-print { width: 34ch; }
 		.typed-brace { width: 1ch; }
-		.output-line { opacity: 0.72; animation: none; }
+		.output-result { opacity: 0.72; animation: none; }
 	}
 </style>
