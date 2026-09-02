@@ -37,7 +37,7 @@ export const navBarConfig: NavBarConfig = {
 			name: "项目",
 			url: "/#projects",
 		},
-		LinkPreset.Archive,
+		LinkPreset.Blog,
 		LinkPreset.About,
 		{
 			name: "GitHub",
