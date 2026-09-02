@@ -75,8 +75,11 @@ const projects = [
 						target={project.primary.external ? "_blank" : undefined}
 						rel={project.primary.external ? "noopener noreferrer" : undefined}
 					>
-						{project.primary.label}
-						<Icon name={project.primary.external ? "fa6-solid:arrow-up-right-from-square" : "material-symbols:chevron-right-rounded"} />
+						<span class="project-button-label">{project.primary.label}</span>
+						<Icon
+							class="project-button-icon"
+							name={project.primary.external ? "fa6-solid:arrow-up-right-from-square" : "material-symbols:chevron-right-rounded"}
+						/>
 					</a>
 					<a
 						class="project-button"
@@ -243,7 +246,14 @@ const projects = [
 	.project-button:hover { transform: translateY(-2px); background: var(--btn-regular-bg-hover); }
 	.project-button.primary { background: var(--primary); color: white; }
 	.project-button.primary:hover { filter: brightness(1.05); }
-	.project-button :global(svg) { width: 0.8rem; height: 0.8rem; }
+	.project-button-label { min-width: 0; white-space: nowrap; }
+	.project-button :global(.project-button-icon) {
+		width: 0.8rem;
+		height: 0.8rem;
+		flex: 0 0 0.8rem;
+		margin-left: 0.12rem;
+		overflow: visible;
+	}
 
 	@media (max-width: 720px) {
 		.project-section { padding-top: 4.25rem; }
