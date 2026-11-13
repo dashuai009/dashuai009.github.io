@@ -1,0 +1,577 @@
+---
+title: "从零构建 WebGPU 实时软体物理：基于 Bevy 0.20 与 WGSL 的四面体 XPBD 仿真"
+pubDate: 2026-11-13
+description: "从连续介质力学形变梯度、McAdams 3×3 Signed SVD 翻转恢复、子步 XPBD 双约束无偏松弛，到四面体网格生成、Bevy 0.20 计算与 WESL 渲染管线及 WebGPU 跨端部署的完整实现解析。"
+author: "dashuai009"
+tags: ["Rust", "Bevy", "WebGPU", "WGSL", "物理仿真", "XPBD"]
+---
+
+想在浏览器和桌面端同时跑一个实时软体物理仿真，但既不想引入庞大的第三方物理引擎，也不满足于一压就扁的“弹簧质点网”——需要真正基于连续介质力学四面体单元、经历剧烈撞击甚至单元内外翻转后仍能稳定弹回原状，并且全部跑在 GPU Compute Shader 上。
+
+[wgsl_compute_shader](https://github.com/dashuai009/wgsl_compute_shader) 就是围绕这个目标完成的实验工程。它基于 **Rust + Bevy 0.20 + WGSL / WESL**，用不到两千行 Rust 代码和一份 870 行的计算着色器，实现了完整的**子步扩展位置动力学（Substepped XPBD）四面体软体求解器**，同一套源码既能编译为原生桌面程序（Metal / Vulkan / DX12），也能通过 WebAssembly + WebGPU 直接运行在浏览器中：
+
+- **在线体验（需支持 WebGPU 的浏览器）**：[https://dashuai009.github.io/wgsl_compute_shader/](https://dashuai009.github.io/wgsl_compute_shader/)
+- **项目源码**：[https://github.com/dashuai009/wgsl_compute_shader](https://github.com/dashuai009/wgsl_compute_shader)
+
+这篇文章从零开始，把整个项目背后的数学推导、GPU 并行算法设计、四面体网格构建，以及升级到 Bevy 0.20 与 WebGPU 时踩过的真实工程陷阱完整讲清楚。
+
+## 整体架构与数据流全景
+
+在深入公式之前，先看整个系统是如何分工的。实时 GPU 物理仿真最核心的工程原则只有一条：**模拟一旦开始，绝不在每帧把顶点数据拷回 CPU**。CPU 只负责在加载或切换模型时做一次拓扑预处理，此后物理求解、法线重算、表面着色与实时阴影全部闭环留在 GPU 显存中：
+
+```text
+[离线 / 加载阶段 - CPU (src/mesh_gen.rs, src/phys_data.rs)]
+  四面体网格 (.vec3f32bin / .vec4u32bin)
+    ├─ 正向化四面体绕序 (保证静止有向体积 V_0 > 0)
+    ├─ 预计算逆参考边矩阵 B = D_m^{-1}（显式行主序打包）与顶点逆质量 w_v
+    ├─ 统计顶点邻接度，计算保动量 Jacobi 松弛权重 ω_t
+    └─ 提取唯一出现一次的外边界面三角形，构建 1:1 索引对齐的 Bevy Mesh
+                         │
+                         ▼  一次性上传至 6 个 GPU ShaderBuffer
+[每帧渲染图调度 - GPU ComputePass (assets/shaders/arap.wgsl)]
+  固定步长 Δt_frame = 1/60s，拆分为 10 个子步 (Δt = 1/600s)：
+    ┌─ 1. predict_positions  : 半隐式 Euler 重力预测与空气阻尼
+    ├─ 2. reset_lagrange     : 每子步清零一次拉格朗日乘子 λ
+    ├─ 3. 循环 8 次无竞争 Jacobi 投影：
+    │     ├─ copy_mid_pos    : 地面高度截断 + 拍摄只读位置快照 pos_mid
+    │     └─ cs_arap         : McAdams Signed SVD → ARAP + 体积约束 → CAS 原子累加 Δx
+    └─ 4. update_velocities  : 由位移反推速度 + 地面切向摩擦衰减
+  子步结束后每帧执行 1 次表面法线重算：
+    └─ clear_normals → accumulate_normals (面积加权叉积原子累加) → normalize_normals
+                         │
+                         ▼  零拷贝绑定为只读 Storage Buffer (@binding 100, 101)
+[表面与阴影渲染 - GPU RenderPass (assets/shaders/sim_pipeline.wesl)]
+  ExtendedMaterial<StandardMaterial, SoftBodyMaterialExt>
+    ├─ 主通道 vertex()         : 按局部 vertex_index 直读变形后位置与平滑法线做 PBR 着色
+    └─ 阴影预通道 prepass      : 同步输出变形顶点深度，驱动地面实时动态阴影
+```
+
+对应到仓库目录中，模块职责非常克制：
+
+| 模块路径 | 核心职责 |
+| :--- | :--- |
+| `assets/shaders/arap.wgsl` | 3×3 Signed SVD、双约束 XPBD 核函数、CAS 浮点原子加与 GPU 动态法线重算 |
+| `assets/shaders/sim_pipeline.wesl` | Bevy 0.20 WESL 顶点与阴影预通道着色器，直读 GPU 变形缓冲 |
+| `src/mesh_gen.rs` | 四面体正向化、外表面三角形自动提取、Freudenthal 六面体与圆环网格生成 |
+| `src/phys_data.rs` | 拉梅参数换算、行主序逆参考矩阵构建、Bevy 资源提取与预设热切换 |
+| `src/sim_pipeline.rs` | `RenderApp` 计算管线缓存、按代数 `generation` 重建 BindGroup、单 Pass 子步录制 |
+| `examples/gen_assets.rs` | 离线资产生成器（含基于广义绕数与 BCC 晶格的斯坦福兔子体网格化） |
+| `tests/{svd_test,arap_test}.rs` | 基于 `wgpu` 的无头 GPU 单元测试，覆盖 SVD、零漂移、翻转恢复与悬臂梁 |
+
+下面我们按“连续介质力学基础 $\to$ 翻转安全 SVD $\to$ 子步 XPBD 求解器 $\to$ 四面体网格与表面提取 $\to$ Bevy 0.20 / WebGPU 工程实现”的顺序逐步展开。
+
+---
+
+## 为什么软体不能只靠弹簧质点网：从四面体到形变梯度
+
+做三维弹性体模拟时，最容易想到的方案是在网格每条边上挂一根胡克弹簧（Mass-Spring System）。边长弹簧实现简单，但有两个致命缺陷：
+
+1. **缺乏体积抗力**：弹簧只关心一维边长。即使给立方体加上面对角线弹簧，在强重力撞击下，三维网格依然很容易像折纸一样拍扁成二维薄片而边长几乎不变。
+2. **无法感知“内外翻转”（Inversion）**：把一个正四面体的顶点 $p_3$ 穿过底面 $(p_0, p_1, p_2)$ 推到对称的镜像位置，6 条边的长度与静止状态**完全相等**！对弹簧系统来说，这个彻底翻面、体积变成负数的畸变单元能量居然是零，因此一旦高速碰撞导致局部翻转，网格就会永久卡死在凹陷状态。
+
+要正确度量三维体积元的拉伸、剪切与翻转，我们需要连续介质力学（Continuum Mechanics）中最核心的几何量——**形变梯度（Deformation Gradient）** $F$。
+
+### 线性四面体单元与形变梯度推导
+
+把软体剖分为若干个四面体单元。考察其中一个四面体，记它在未变形**参考构型（Material / Rest Configuration）**下的四个顶点坐标为 $X_0, X_1, X_2, X_3 \in \mathbb{R}^3$，在变形后**当前构型（World / Deformed Configuration）**下的位置为 $x_0, x_1, x_2, x_3 \in \mathbb{R}^3$。
+
+在一阶线性有限元（Linear Tetrahedral FEM）假设下，四面体内部任意物质点 $X$ 到世界坐标 $x(X)$ 的映射是仿射变换：
+
+$$
+x(X) = x_0 + F (X - X_0)
+$$
+
+其中 $3 \times 3$ 矩阵 $F = \frac{\partial x}{\partial X}$ 就是该四面体内部处处相等的**形变梯度**。将四个顶点代入上式并分别与第 0 个顶点作差，可以得到三条边向量的映射关系：
+
+$$
+x_1 - x_0 = F(X_1 - X_0), \quad x_2 - x_0 = F(X_2 - X_0), \quad x_3 - x_0 = F(X_3 - X_0)
+$$
+
+把这三条边按**列向量**拼成两个 $3 \times 3$ 边矩阵——参考边矩阵 $D_m$ 与当前边矩阵 $D_s$：
+
+$$
+D_m = \begin{bmatrix} X_1 - X_0 & X_2 - X_0 & X_3 - X_0 \end{bmatrix}, \qquad
+D_s = \begin{bmatrix} x_1 - x_0 & x_2 - x_0 & x_3 - x_0 \end{bmatrix}
+$$
+
+于是三组向量方程合并为极其紧凑的矩阵方程 $D_s = F D_m$。只要参考四面体不退化（四个顶点不共面），$D_m$ 就可逆，形变梯度 $F$ 由下式唯一确定：
+
+$$
+F = D_s D_m^{-1} = D_s B, \qquad B \triangleq D_m^{-1}
+$$
+
+注意 $B = D_m^{-1}$ 只依赖未变形的初始网格，在模拟全过程中是**常数矩阵**，可以在加载阶段由 CPU 一次性算好存入 `TetStatic`。GPU 在每次迭代里只需要做 3 次向量减法构造 $D_s$，再做一次 $3\times 3$ 矩阵乘法就能拿到 $F$。
+
+### 有向体积正向化与集中质量分配
+
+行列式 $\det(D_m)$ 的几何意义是三条参考边张成的平行六面体有向体积，因此四面体的有向静止体积为：
+
+$$
+V_0 = \frac{1}{6} \det(D_m) = \frac{1}{6} (X_1 - X_0) \cdot \big((X_2 - X_0) \times (X_3 - X_0)\big)
+$$
+
+如果建模工具导出的顶点顺序满足 $\det(D_m) < 0$，计算出的静止体积就是负数，后续质量累加与体积约束符号都会错乱。因此在 `src/mesh_gen.rs` 中，加载任意网格的第一步就是调用 `canonicalize_tets`：凡是发现 $V_0 < 0$，立即交换最后两个顶点索引 `(i2, i3)`——交换矩阵两列恰好使行列式变号，从而严格保证每个单元满足 $V_0 > 0$。
+
+有了正体积 $V_0$ 与材料密度 $\rho$（项目中取水的密度 $\rho = 1000\,\text{kg/m}^3$），单元总质量 $\rho V_0$ 均分给四个顶点（Lumped Mass）：
+
+$$
+m_v = \sum_{t \ni v} \frac{1}{4} \rho V_{0, t}, \qquad w_v = \begin{cases} 0, & \text{若顶点 } v \text{ 被固定（如悬臂梁左端面）} \\ 1 / m_v, & \text{自由运动顶点} \end{cases}
+$$
+
+存储逆质量 $w_v = m_v^{-1}$ 是位置动力学（PBD / XPBD）的标准技巧：被铆钉固定的边界顶点只需令 $w_v = 0$，无需任何额外 `if` 分支，它在所有约束投影公式中的位移修正量都会自动归零，相当于拥有无穷大质量。
+
+### 踩坑实录一：CPU 列主序与 WGSL 行主序混用导致静止网格“自爆”
+
+这是很多人在联动 Rust 线性代数库（`nalgebra` / `glam`）与手写 Shader 时最容易踩中的隐蔽 Bug。
+
+在初始处于静止姿态时，$x_a = X_a$，即 $D_s = D_m$，理论上必须算出严格的单位阵 $F = D_m D_m^{-1} = I$。然而在项目的早期原型中，网格一加载进来，哪怕关掉重力，也会在第一帧瞬间剧烈扭曲炸开。
+
+原因就出在矩阵内存布局上：`nalgebra::Matrix3` 在底层按**列主序（Column-Major）**存储 `[b00, b10, b20, b01, ...]`，如果直接用 `b.as_slice()` 拷进 GPU 缓冲，而 WGSL 端自定义的 `Mat3x3Row`（`array<f32, 9>`）按**行主序（Row-Major）**下标 `a[i * 3 + k] * b[k * 3 + j]` 做矩阵乘法，WGSL 实际读到的是 $B^\top = D_m^{-\top}$！结果静止姿态算出来的形变梯度变成了：
+
+$$
+F_{\text{bug}} = D_m D_m^{-\top} \neq I \quad (\text{除非 } D_m \text{ 恰好是正交阵})
+$$
+
+一旦静止四面体的 $F \neq I$，求解器就会误以为网格正处于剧烈剪切状态，凭空施加巨大的“恢复力”把网格撕裂。修复方法是在 `src/phys_data.rs` 中显式按行下标 `(row, col)` 将 $B = D_m^{-1}$ 打包进 `TetStatic`，并顺手把 `rest_vol` 和松弛权重 `tet_omega` 塞进 `vec4<f32>` 的第四分量以对齐 16 字节边界：
+
+```rust
+// src/phys_data.rs：显式按行主序打包 B = D_m^-1，与 arap.wgsl 的 mul_row3 严格对齐
+let d_m = Matrix3::from_columns(&[p1 - p0, p2 - p0, p3 - p0]);
+let rest_vol = d_m.determinant() / 6.0;
+let b = d_m.try_inverse().expect("invertible rest edge matrix D_m");
+
+tets.push(TetStatic {
+    indices: [i0, i1, i2, i3],
+    b_row0: [b[(0, 0)], b[(0, 1)], b[(0, 2)], rest_vol],
+    b_row1: [b[(1, 0)], b[(1, 1)], b[(1, 2)], tet_omega],
+    b_row2: [b[(2, 0)], b[(2, 1)], b[(2, 2)], 0.0],
+});
+```
+
+---
+
+## 翻转安全的极分解：McAdams 3×3 Signed SVD
+
+拿到形变梯度 $F$ 后，下一步是定义测量“形变程度”的标量约束函数 $C(F)$。
+
+### 为什么需要极分解与奇异值分解？
+
+一个自然的想法是直接测量 $F$ 偏离单位阵的距离 $\|F - I\|_F$。但不要忘了：**刚体纯旋转也是仿射变换**！如果软体在空中整体旋转了 $90^\circ$ 而没有任何拉伸，此时 $F = R \in SO(3)$ 满足 $R^\top R = I$ 且 $R \neq I$。如果能量或约束直接惩罚 $\|F - I\|_F$（这正是线性弹性力学小变形柯西应变的问题），旋转中的软体就会产生荒谬的体积膨胀伪影。
+
+客观性原理（Frame Indifference）要求弹性应变能对刚体旋转不变。对 $F$ 做奇异值分解（SVD）：
+
+$$
+F = U \Sigma V^\top, \qquad \Sigma = \operatorname{diag}(\sigma_1, \sigma_2, \sigma_3)
+$$
+
+它的物理图景极其清晰：先在物质空间用正交阵 $V^\top$ 对齐主应变轴，再沿三个正交主方向分别缩放 $\sigma_1, \sigma_2, \sigma_3$ 倍（称为**主拉伸比 Principal Stretches**），最后用 $U$ 旋转到世界空间。当没有形变只有刚体旋转时，$\sigma_1 = \sigma_2 = \sigma_3 = 1$。
+
+### 标准 SVD 的翻转陷阱与“带符号奇异值”修正
+
+标准数学库里的 SVD 总是约定所有奇异值非负：$\sigma_1 \ge \sigma_2 \ge \sigma_3 \ge 0$。当四面体在高速撞击地面时，某个顶点瞬间穿透对面底面导致单元翻转，此时体积比满足：
+
+$$
+J = \det(F) = \det(U) \cdot (\sigma_1 \sigma_2 \sigma_3) \cdot \det(V) < 0
+$$
+
+由于标准 SVD 强行令 $\sigma_3 > 0$，负号就只能被吸收到左奇异矩阵 $U$ 或右奇异矩阵 $V$ 中，使得 $\det(U)\det(V) = -1$——也就是说，$U V^\top$ 不再是真正的三维旋转（$\det = +1$），而变成了一个**镜像反射矩阵（Reflection，$\det = -1$）**！如果我们此时驱使 $F$ 向 $U V^\top$ 靠拢（即令 $\sigma_i \to 1$），求解器实际上是在把已经翻面的四面体“扶正”成一个稳定的镜像反射四面体，网格表面会留下永远弹不回来的死折。
+
+Irving et al. (2004) 提出的**带符号奇异值分解（Signed SVD）**优雅地解决了这个问题：强制要求 $U, V \in SO(3)$ 都是纯旋转矩阵（即严格满足 $\det(U) = +1$ 且 $\det(V) = +1$），把行列式的符号全部交给最小的奇异值 $\sigma_3$：
+
+$$
+\det(U) = +1, \quad \det(V) = +1, \quad \sigma_1 \ge \sigma_2 \ge |\sigma_3|, \quad \operatorname{sign}(\sigma_3) = \operatorname{sign}(\det(F))
+$$
+
+看这小小一步带来的质变：当四面体发生翻转（$\det(F) < 0$）时，$\sigma_3 < 0$。此时目标约束要将 $\sigma_3$ 拉回 $+1$，差值 $\sigma_3 - 1 < -1$ 会产生一个指向底面法向的连续、强大的恢复梯度，推着穿透的顶点一路穿过 $\sigma_3 = 0$ 的退化平面，平滑弹回 $\sigma_3 = +1$ 的正常正体积构型！
+
+### WGSL 中的无分支 McAdams 3×3 SVD 实现
+
+在 GPU Compute Shader 上，不同线程束（Wavefront / Warp）必须同步执行指令，充满 `while` 循环和复杂分支的通用 SVD 会引发严重的线程发散。项目中的 `assets/shaders/arap.wgsl` 完整移植了 McAdams et al. (2011) 专为 SIMD / GPU 设计的定长无分支 `svd3x3` 算法，核心分为六步：
+
+1. **构造对称半正定法方程矩阵** $S = F^\top F$（只存下三角 6 个标量 `s11, s21, s31, s22, s32, s33`）。
+2. **固定 4 轮循环 Jacobi 旋转**：每轮依次针对 `(1,2)`、`(2,3)`、`(1,3)` 三个平面计算近似半角 Givens 旋转 $(c, s)$ 消去非对角元，同时用单位四元数 `q_V = (qvs, qvvx, qvvy, qvvz)` 累积旋转。**因为单位四元数只编码三维纯旋转，还原出的矩阵 $V$ 天然满足 $\det(V) = +1$！**
+3. **计算 $B' = F V$ 并按列范数降序排列**：使用无分支 `select` 实现的 `cond_swap` 比较三列范数平方。关键细节在于：**每当交换两列时，行列式会变号，因此必须同步将其中一列连同对应的 $V$ 列乘以 `-1.0`**，从而在排序后依然严格保持 $\det(V) = +1$。
+4. **3 次定长 Givens QR 旋转提取 $U$ 与 $\Sigma$**：对排序后的 $B'$ 依次消去下三角元素 `a21`、`a31`、`a32`，将平面旋转同步累积到初始为单位阵的 $U$ 上。同样因为平面 Givens 旋转行列式恒为 $+1$，最终得到的 $U$ 天然满足 $\det(U) = +1$。
+5. **自动获得带符号奇异值**：由于 $B' = F V = U \Sigma$ 且 $\det(U) = \det(V) = +1$，上三角化后对角线剩余的三个元素 `(a11, a22, a33)` 中，前两个经 Givens 消元取正，最后一个对角元 `S.z = a33` **无需任何额外行列式判断，在代数上就自动等于带符号的 $\sigma_3$**！
+
+---
+
+## 子步 XPBD 双约束求解与无偏 Jacobi 松弛
+
+有了翻转安全的 Signed SVD，我们接下来构建动力学时间积分与约束求解器。
+
+### 从传统 PBD 到物理一致的 XPBD
+
+早期游戏常用的位置动力学（PBD，Müller et al. 2007）在每次迭代中直接给位移修正乘一个人为刚度系数 $k \in [0, 1]$。这导致一个头疼的现象：把迭代次数从 4 次加到 16 次，或者把帧率从 60 FPS 切到 120 FPS，同一块果冻突然硬得像石头——因为有效刚度与迭代次数和时间步长强耦合。
+
+**扩展位置动力学（XPBD，Macklin et al. 2016）**从隐式欧拉变分原理出发，引入与胡克定律刚度 $k$ 严格成反比的**物理柔度（Compliance）** $\alpha = 1 / k$，定义时间步缩放柔度 $\tilde{\alpha} = \frac{\alpha}{\Delta t^2}$，并为每个约束维护一个累积拉格朗日乘子 $\lambda$。在单次约束投影中，乘子增量 $\Delta \lambda$ 与四个顶点的位移修正 $\Delta x_a$ 由正则化牛顿步给出：
+
+$$
+\Delta \lambda = \frac{-C(x) - \tilde{\alpha} \lambda}{\sum_{a=0}^{3} w_a \|\nabla_{x_a} C(x)\|_2^2 + \tilde{\alpha}}, \qquad
+\lambda \leftarrow \lambda + \Delta \lambda, \qquad
+\Delta x_a = w_a \Delta \lambda \nabla_{x_a} C(x)
+$$
+
+注意分子里的 $-\tilde{\alpha}\lambda$ 反馈项与分母里的 $+\tilde{\alpha}$ 正则化项：哪怕时间步长 $\Delta t \to 0$ 或刚度 $k \to \infty$（即 $\tilde{\alpha} \to 0$），分母也绝对不会像显式有限元那样爆炸，而是平滑退化为刚性几何投影；而在柔度有限时，随着迭代收敛 $\Delta \lambda \to 0$，解精确收敛到隐式弹性平衡方程 $C(x) + \tilde{\alpha}\lambda = 0$。
+
+### 杨氏模量、泊松比与双约束耦合（ARAP + 体积保持）
+
+在各向同性线弹性材料中，工程上最直观的参数是**杨氏模量 $E$**（抗拉伸刚度）与**泊松比 $\nu \in (0, 0.5)$**（横向收缩比），它们与拉梅常数（Lamé Parameters）$(\mu, \lambda_{\text{Lamé}})$ 的换算关系写在 `src/phys_data.rs` 的 `StiffnessPreset::lame_parameters` 中：
+
+$$
+\mu = \frac{E}{2(1 + \nu)}, \qquad \lambda_{\text{Lamé}} = \frac{E \nu}{(1 + \nu)(1 - 2\nu)}
+$$
+
+对应连续介质应变能密度 $\Psi(F) = \mu \|\Sigma - \mathbf{1}\|_2^2 + \frac{\lambda_{\text{Lamé}}}{2} (\det(F) - 1)^2$ 在体积为 $V_0$ 的四面体上积分 $U_e = V_0 \Psi(F) = \frac{1}{2\alpha} C^2$，我们可以把每个四面体拆成两个物理量纲完全精确的标量约束（注意能量系数差一个因子 2，在实现中归入统一标度）：
+
+#### 1. 共旋 ARAP 形状应变约束 $C_{\text{arap}}$
+
+定义奇异值偏离 $(1, 1, 1)$ 的欧氏范数约束：
+
+$$
+C_{\text{arap}}(F) = \|\Sigma - \mathbf{1}\|_2 = \sqrt{(\sigma_1 - 1)^2 + (\sigma_2 - 1)^2 + (\sigma_3 - 1)^2}, \qquad
+\tilde{\alpha}_{\text{arap}} = \frac{1}{\mu V_0 \Delta t^2}
+$$
+
+如何求 $C_{\text{arap}}$ 对四个顶点 $x_0, x_1, x_2, x_3$ 的梯度 $g_a = \nabla_{x_a} C_{\text{arap}}$？利用链式法则分三步走，完全不需要数值差分：
+
+1. 对奇异值求导（当 $C_{\text{arap}} \ge 10^{-6}$ 时）：$\frac{\partial C_{\text{arap}}}{\partial \sigma_k} = \frac{\sigma_k - 1}{C_{\text{arap}}}$。
+2. 利用奇异值对矩阵元素的经典导数恒等式 $\frac{\partial \sigma_k}{\partial F_{ij}} = U_{ik} V_{jk}$，合成 $3\times 3$ 梯度矩阵：
+
+$$
+\frac{\partial C_{\text{arap}}}{\partial F_{ij}} = \sum_{k=1}^{3} U_{ik} \left(\frac{\sigma_k - 1}{C_{\text{arap}}}\right) V_{jk}
+$$
+
+3. 由 $F = D_s B = [x_1 - x_0, x_2 - x_0, x_3 - x_0] B$，对 $a \in \{1, 2, 3\}$ 展开分量立得 $g_a = \left(\frac{\partial C_{\text{arap}}}{\partial F} B^\top\right)_{\text{第 } a \text{ 列}}$；而由整体平移不变性 $\sum_{a=0}^3 g_a = \mathbf{0}$，第 0 个顶点的梯度直接由负和给出：
+
+$$
+g_0 = -(g_1 + g_2 + g_3)
+$$
+
+这不仅省掉了 9 次乘加，还从代数上保证了内力严格满足牛顿第三定律（净合力为零，系统总线性动量守恒）。对应 `assets/shaders/arap.wgsl` 中的 `compute_gradient_row_major` 函数。
+
+#### 2. 静水体积保持约束 $C_{\text{vol}}$
+
+如果只用 $C_{\text{arap}}$，软体的等效泊松比固定为 0，受压时横向不会鼓出，看起来像海绵而不是橡胶或生物软组织。为此我们在同一核函数内串联静水体积约束：
+
+$$
+C_{\text{vol}}(x) = \det(F) - 1 = \frac{e_1 \cdot (e_2 \times e_3)}{6 V_0} - 1, \qquad
+\tilde{\alpha}_{\text{vol}} = \frac{1}{\lambda_{\text{Lamé}} V_0 \Delta t^2}
+$$
+
+其中 $e_1 = y_1 - y_0, e_2 = y_2 - y_0, e_3 = y_3 - y_0$ 是叠加上一步 ARAP 位移修正 `dp` 后的瞬时边向量。标量三重积对三个边端点的梯度直接就是叉积（几何意义正是对面三角形的面积法向量）：
+
+$$
+g_{1,\text{vol}} = \frac{e_2 \times e_3}{6 V_0}, \quad
+g_{2,\text{vol}} = \frac{e_3 \times e_1}{6 V_0}, \quad
+g_{3,\text{vol}} = \frac{e_1 \times e_2}{6 V_0}, \quad
+g_{0,\text{vol}} = -(g_{1,\text{vol}} + g_{2,\text{vol}} + g_{3,\text{vol}})
+$$
+
+无需再做第二次 SVD，只用三次 `cross` 就能高效抵抗高泊松比下的体积坍缩。
+
+### 踩坑实录二：拉格朗日乘子清零时机与子步化（Substepping）
+
+Macklin et al. 在 2019 年的论文 *Small Steps in Physics Simulation* 中揭示了一个在工程上性价比极高的规律：**与其在一个大时间步（$1/60\,\text{s}$）里跑 80 次约束迭代，不如把一帧拆成 $N_{\text{sub}} = 10$ 个子步（$\Delta t = 1/600\,\text{s}$），每个子步只跑 $K = 8$ 次迭代**。原因在于误差是随 $\Delta t^2$ 缩小的，缩小 10 倍时间步长能让时间步缩放柔度 $\tilde{\alpha} \propto 1/\Delta t^2$ 的条件数改善两个数量级，同样 80 次总算力下刚度传递速度和碰撞稳定性判若云泥。
+
+在实现子步循环时，仓库早期提交曾犯过一个经典的 XPBD 错误——把 `reset_lagrange` 写进了内层 `for _ in 0..K` 迭代循环里！如果每次迭代都把 $\lambda$ 清零，分子中的反馈项 $-\tilde{\alpha}\lambda$ 就永远是 0，XPBD 瞬间退化回每次都只走第一步的欠松弛 PBD，无论迭代多少次都无法收敛到目标柔度。正确的调度顺序必须严格把 `reset_lagrange` 放在**子步开头、Jacobi 循环之外**：
+
+```rust
+// src/sim_pipeline.rs：单个 ComputePass 内录制 10 个子步 × 8 次 Jacobi 迭代
+for _ in 0..SUBSTEPS_PER_FRAME {
+    pass.set_pipeline(predict_pl);
+    pass.dispatch_workgroups(wg_verts, 1, 1); // 1. 重力半隐式 Euler 预测
+
+    pass.set_pipeline(reset_pl);
+    pass.dispatch_workgroups(wg_tets, 1, 1);  // 2. 每子步仅清零一次 λ！
+
+    for _ in 0..JACOBI_ITERS_PER_SUBSTEP {
+        pass.set_pipeline(copy_mid_pl);
+        pass.dispatch_workgroups(wg_verts, 1, 1); // 3a. 地面截断 + 拷贝只读快照 pos_mid
+
+        pass.set_pipeline(arap_pl);
+        pass.dispatch_workgroups(wg_tets, 1, 1);  // 3b. 并行求解四面体并 CAS 原子写回 pos
+    }
+
+    pass.set_pipeline(update_vel_pl);
+    pass.dispatch_workgroups(wg_verts, 1, 1); // 4. v = (x - x_prev)/Δt + 地面摩擦
+}
+```
+
+### 踩坑实录三：GPU 无竞争并行 Jacobi、CAS 浮点原子加与“无偏松弛”
+
+在 CPU 上写 XPBD 通常使用串行的 Gauss-Seidel 循环：前一个四面体改完顶点坐标，后一个共享该顶点的四面体立刻读到最新位置，收敛既快又稳。但到了 GPU 上，几千个四面体分属不同线程并发运行；一个内部顶点往往被 6 到 24 个四面体共享。
+
+如果让所有四面体线程一边从 `pos` 读坐标，一边往 `pos` 写新坐标，就会发生严重的**读写竞争（Data Race）**，网格会随机抖动甚至因为读到半更新坐标而发散。要避免复杂的图着色（Graph Coloring）预处理，最简洁通用的 GPU 方案是**双缓冲并行 Jacobi 求解**：
+
+1. **快照隔离读**：每次迭代前先跑一趟极轻量的 `copy_mid_pos` 核函数，把 `pos` 拷入 `verts[v].pos_mid`。随后在 `cs_arap` 中，所有四面体**只从只读的 `pos_mid` 读取顶点位置**，彻底消除读写竞争。
+2. **CAS 浮点原子累加写**：WGSL 标准没有原生的 `atomic<f32>` 加法指令，只支持 `atomic<u32>` 与 `atomic<i32>`。我们把 `pos` 声明为 `array<atomic<u32>>`，存入 `f32` 的 IEEE-754 位模式，利用 `atomicCompareExchangeWeak` 实现无锁的自旋 CAS（Compare-And-Swap）浮点原子加法：
+
+```wgsl
+// assets/shaders/arap.wgsl：基于 atomic<u32> + bitcast 实现无锁浮点原子加
+fn atomic_add_pos_f32(idx: u32, val: f32) {
+    if (abs(val) < 1e-20) {
+        return;
+    }
+    var old_bits: u32 = atomicLoad(&pos[idx]);
+    loop {
+        let new_f = bitcast<f32>(old_bits) + val;
+        let new_bits = bitcast<u32>(new_f);
+        let r = atomicCompareExchangeWeak(&pos[idx], old_bits, new_bits);
+        if (r.exchanged) {
+            break;
+        }
+        old_bits = r.old_value;
+    }
+}
+```
+
+然而，纯并行 Jacobi 有一个著名的稳定性条件：如果某个顶点同时被 $N_v$ 个四面体往同一方向拉，把 $N_v$ 份全额修正量直接加在一起就会严重过冲（Overshoot）发散！所以必须乘一个欠松弛因子 $\omega \in (0, 1)$。
+
+这里藏着**整套算法最容易算错的两个细节**：
+
+1. **按单元定权而非按顶点定权（动量守恒）**：如果把松弛因子取在每个顶点上 $\omega_v = 1 / \text{valence}(v)$，同一个四面体的四个顶点邻接度不同，原本加和为零的内力修正 $\sum_a m_a \Delta x_a = \Delta\lambda \sum_a g_a = \mathbf{0}$ 就会变成 $\Delta\lambda \sum_a \omega_a g_a \neq \mathbf{0}$，凭空产生鬼影外力让物体在空中自己加速漂移！因此在 `src/phys_data.rs` 中，我们对**每个四面体**取其四个顶点最大邻接度计算统一的单元权重：
+   $$
+   \omega_t = \operatorname{clamp}\!\left(\frac{1.8}{\max_{a \in \{0..3\}} \operatorname{valence}(i_a)},\; 0.08,\; 0.50\right)
+   $$
+   同一四面体四角共享同一个标量 $\omega_t$，动量守恒在机器精度下依然严格成立。
+2. **同步缩放 $\delta\lambda$ 与 $\Delta x$（无偏刚度）**：很多教程只在最后写回位置时乘松弛因子：$\lambda \leftarrow \lambda + \Delta\lambda,\; \Delta x_a = \omega_t w_a \Delta\lambda g_a$。仔细检查它的不动点就会发现灾难：每次迭代 $\lambda$ 累积了 100% 的步长，位置却只走了 $\omega_t$ 的步长，导致 $\lambda$ 提前 $\frac{1}{\omega_t}$ 倍饱和，最终收敛到的平衡态变成了 $C(x^\star) + \frac{\tilde{\alpha}}{\omega_t}\lambda^\star \approx 0$——**软体的有效刚度平白无故变软了 $1/\omega_t$ 倍（最高可达 10 倍）**！
+   正确的无偏写法是把 `omega_eff` 直接乘在 `dlambda` 上，让 $\lambda$ 与 $\Delta x$ 同步欠松弛：
+
+```wgsl
+// assets/shaders/arap.wgsl：将 omega_eff 同步作用于 dlambda 与 dp，保证收敛柔度精确等于 alpha_tilde
+let dlambda = -omega_eff * (c_arap + alpha_tilde * lambda_arap) / sys_denom;
+lambda_arap += dlambda;
+dp0 += im.x * dlambda * g0;
+dp1 += im.y * dlambda * g1;
+dp2 += im.z * dlambda * g2;
+dp3 += im.w * dlambda * g3;
+```
+
+现在检查不动点：当 `dlambda -> 0` 且 `omega_eff > 0` 时，括号内必然满足 $c_{\text{arap}} + \tilde{\alpha}\lambda_{\text{arap}} = 0$，收敛后的物理刚度与单元剖分密度和松弛权重彻底解耦！这在 `Beam` 悬臂梁基准测试中可以直观看到：切换 Soft / Medium / Stiff 三档杨氏模量时，静态弯曲挠度清晰可预期。
+
+---
+
+## 四面体资产离线生成与外表面自动提取
+
+为了在浏览器端秒开加载，项目不依赖任何复杂的四面体文件格式或重型 `.glb` 场景树，只用自定义的 `BinAssetPlugin`（`src/bin_asset_loader.rs`）加载两份紧凑的小端二进制数组：
+
+- `<slug>_positions.vec3f32bin`：`[f32; 3]` 顶点坐标流；
+- `<slug>_tet_indices.vec4u32bin`：`[u32; 4]` 四面体顶点索引流。
+
+全部 4 套预设模型加起来体积仅约 **200 KB**，均由离线工具 `examples/gen_assets.rs` 生成：
+
+| 预设资产 | 顶点数 `NV` | 四面体数 `NT` | 网格构建算法与物理测试目的 |
+| :--- | ---: | ---: | :--- |
+| **Bunny** | 1,173 | 4,572 | BCC 晶格 + 广义绕数 Isosurface Stuffing，测试复杂非规则曲面碰撞回弹 |
+| **Cube** | 343 | 1,296 | $6 \times 6 \times 6$ 共形 Freudenthal 六四面体剖分，带倾角跌落翻滚 |
+| **Torus** | 600 | 2,304 | Shirley-Chiu 等面积圆盘映射 + 24 段环向共形剖分，测试大旋转几何非线性 |
+| **Beam** | 325 | 1,152 | $12 \times 4 \times 4$ 悬臂梁，左端面固定 `inv_mass = 0`，定量检验弯曲刚度 |
+
+### 结构化共形剖分与圆环方盘映射
+
+把一个六面体格子切成四面体时，最常见的新手错误是随意切成 5 个四面体且相邻格子对角线方向不一致，导致共享四边形面上出现“一条对角线交叉另一条对角线”的非共形裂缝，变形时表面会裂口。
+
+`src/mesh_gen.rs` 中的 `push_freudenthal_hex` 采用经典的 **Kuhn / Freudenthal 6-四面体共形剖分**：所有六面体格子统一沿主对角线 `v000 -> v111` 切出 6 个围绕主对角线旋转排列的四面体。这样任意两个相邻格子在左/右、上/下、前/后共享面上切出的二维对角线方向**严格一致**，天然构成无裂缝的流形四面体网格。对于 `Torus` 圆环，截面则先通过 **Shirley-Chiu 同心方盘映射（Concentric Map）** 将正方形网格 $[-1, 1]^2$ 低畸变地映射为单位圆盘，再沿环向扫掠闭合，避免了极坐标映射在圆心处挤出退化尖刺单元。
+
+### 斯坦福兔子的体网格化：广义绕数 + BCC Isosurface Stuffing
+
+对于像斯坦福兔子这样的任意曲面三角网格，我们怎样不借助外部商业软件、用纯 Rust 生成高质量四面体网格？`examples/gen_assets.rs` 实现了一个精简版的 **Isosurface Stuffing（Labelle & Shewchuk, SIGGRAPH 2007）**：
+
+1. **广义绕数（Generalized Winding Number）内外判别**：对空间任意采样点 $p$，遍历闭合表面三角形计算立体角之和（Van Oosterom & Strackee 公式）：
+   $$
+   \Omega(p) = \frac{1}{4\pi} \sum_{\triangle abc} 2 \operatorname{atan2}\!\Big(a \cdot (b \times c),\; \|a\|\|b\|\|c\| + (a\cdot b)\|c\| + (b\cdot c)\|a\| + (c\cdot a)\|b\|\Big)
+   $$
+   其中 $a, b, c$ 是三角形顶点相对 $p$ 的位移向量。内部点满足 $\Omega(p) \approx 1$，外部点 $\Omega(p) \approx 0$，结合点到三角形最近点距离（Ericson 算法）即得到精确有符号距离场 $\phi(p)$。
+2. **体心立方晶格（BCC Lattice）填充与边界吸附**：在包围盒内铺设由整数格点（Primal）和体心半格点（Dual）交错构成的 BCC 背景四面体晶格——BCC 天然由全等、二面角优良的四面体组成。首先将距离零等值面极近的背景节点吸附（Snap）到最近表面点上，随后保留内部四面体并对跨界边按符号距离线性插值切割，最后剔除体积过小的退化薄片（Sliver），便得到了仅含 4,572 个良态四面体、浏览器可轻松跑满高帧率的流形兔子体网格。
+
+### 外表面逆时针三角形自动提取与 GPU 动态法线
+
+在四面体全部正向化（$\det(D_m) > 0$）之后，甚至不需要额外存储表面网格文件：对每个正向四面体 `[i0, i1, i2, i3]`，它的四个朝外逆时针（CCW）面分别是 `[i1, i2, i3]`、`[i0, i3, i2]`、`[i0, i1, i3]` 和 `[i0, i2, i1]`。把三元组排序后作为哈希表 Key 统计出现次数：
+
+- **内部面**必然被左右两个相邻四面体以相反绕序各共享一次，出现次数恒为 `2`；
+- **外边界面**只属于唯一一个四面体，出现次数恒为 `1`！
+
+`extract_boundary_triangles` 筛出所有计数为 `1` 的有向面，直接同物理顶点数组 `0..NV` 组装成 Bevy `Mesh`。这也带来了一个巨大的渲染优势：**渲染网格的顶点下标 `0..NV` 与物理模拟缓冲 `pos` 的下标完全一一对应**，不需要任何重心坐标插值（Skinning / Embedded Mesh）！
+
+由于软体每帧都在发生大形变，固定法线会让弯曲部位的光照显得像塑料纸一样僵硬。因此在每帧 10 个物理子步跑完后，我们在 GPU 上依次调度 `clear_normals`、`accumulate_normals` 和 `normalize_normals` 三个核函数：每个表面三角形计算未归一化的叉积向量 $(p_b - p_a) \times (p_c - p_a)$（模长恰为三角形面积的 2 倍，天然构成**面积加权法线**），通过同样的 CAS 浮点原子加累加到三个顶点上，最后统一归一化，开销不到 0.05 ms。
+
+---
+
+## 接入 Bevy 0.20 渲染管线与 WESL 顶点着色器
+
+把算法跑通只是第一步，将自定义 GPU Compute 管线干净地接入最新发布的 **Bevy 0.20（基于 `wgpu 30` 与 Rust 2024）** 并同时满足桌面端与浏览器 WebGPU 的规范约束，有几处非常关键的架构设计。
+
+### 满足 WebGPU 8-Storage-Buffer 上限的紧凑布局
+
+桌面端 Vulkan / Metal 通常允许单个着色器阶段绑定几十个 Storage Buffer，但 **WebGPU 标准默认硬性规定 `maxStorageBuffersPerShaderStage = 8`**。早期代码把位置、快照位置、速度、逆质量、四面体索引、逆参考矩阵、静止体积、拉格朗日乘子拆成了 9 个独立数组，在桌面端一切正常，一进浏览器立刻触发管线校验失败。
+
+为此我们将 `@group(0)` 的绑定压缩整合为 **6 个 `ShaderBuffer` + 1 个 `UniformBuffer`**（共 7 个绑定，稳稳落在 WebGPU 默认上限之内）：
+
+- `@binding(0)` `pos: array<atomic<u32>>`（`3 * NV`，同时作为渲染材质的只读顶点源）
+- `@binding(1)` `normals: array<atomic<u32>>`（`3 * NV`，同时作为渲染材质的只读法线源）
+- `@binding(2)` `verts: array<VertData>`（打包 `pos_mid`、`inv_mass`、`pos_prev`、`vel`）
+- `@binding(3)` `tets: array<TetStatic>`（只读，打包索引、行主序 $B$、$V_0$ 与 $\omega_t$）
+- `@binding(4)` `tet_state: array<vec4<f32>>`（打包 $\lambda_{\text{arap}}$、$\lambda_{\text{vol}}$ 与残差）
+- `@binding(5)` `surface_tris: array<u32>`（只读，外表面三角形索引）
+- `@binding(6)` `params: SimParams`（Uniform：时间步长、拉梅参数、重力、摩擦与计数）
+
+### Bevy 0.20 的 `RenderGraph` ECS 调度与按代数重建 BindGroup
+
+升级到 Bevy 0.20 时，渲染子应用（`RenderApp`）有几处值得注意的现代化演进：
+
+1. **资源跨世界提取属性**：实现 `ExtractResource` 的资源（`PhysData` 与 `SimConfig`）需要显式标注 `#[extract_app(bevy::render::RenderApp)]`，底层缓冲区类型统一为 `bevy::render::storage::ShaderBuffer` / `GpuShaderBuffer`；主世界事件也迁移为更轻量的 `#[derive(Message)]` + `MessageReader` / `MessageWriter`。
+2. **用单调递增 `generation` 驱动动态切换**：如果只用 `resource_added::<PhysData>` 控制 BindGroup 创建，那么当用户在 UI 点击切换到另一个模型预设或按下 `R` 重置时，由于资源已存在，渲染世界会继续沿用旧缓冲区的 BindGroup！我们在 `PhysData` 与 `PhysDataBindGroups` 中各维护一个 `generation: u64` 计数器，每次加载新模型自增一次，`prepare_sim_data_bind_groups` 只要检测到两边代数不一致就自动重建绑定组。
+3. **`RenderGraph` 成为标准 ECS Schedule**：在旧版 Bevy 中，插入自定义 Compute Pass 需要定义复杂的 `Node` Trait、声明 Slot 边并挂载到子图上；而在 Bevy 0.20 中，`RenderGraph` 直接是一个可以用系统先后顺序编排的 ECS Schedule！只需一行 `.before(camera_driver)` 即可确保物理子步与法线更新在所有相机与阴影渲染通道启动前完成：
+
+```rust
+// src/sim_pipeline.rs：Bevy 0.20 RenderApp 插件注册，无需再编写样板 Node Trait
+let render_app = app.sub_app_mut(RenderApp);
+render_app
+    .init_resource::<SimParamsBuffer>()
+    .init_resource::<SimPipelineReady>()
+    .add_systems(RenderStartup, init_sim_pipeline)
+    .add_systems(
+        Render,
+        (
+            check_pipeline_ready.in_set(RenderSystems::Prepare),
+            prepare_sim_params_buffer.in_set(RenderSystems::PrepareResources),
+            prepare_sim_data_bind_groups
+                .in_set(RenderSystems::PrepareBindGroups)
+                .run_if(resource_exists::<PhysData>),
+        ),
+    )
+    .add_systems(RenderGraph, run_xpbd_simulation.before(camera_driver));
+```
+
+### 踩坑实录四：WESL 扩展材质、动态阴影与统一网格缓冲偏移
+
+怎样让 Bevy 的标准 PBR 光照与阴影直接使用 GPU 计算出的变形坐标？我们借助 `ExtendedMaterial<StandardMaterial, SoftBodyMaterialExt>` 扩展标准材质（`src/material.rs`）：
+
+```rust
+#[derive(Asset, AsBindGroup, Reflect, Debug, Clone)]
+pub struct SoftBodyMaterialExt {
+    #[storage(100, read_only, visibility(vertex))]
+    pub vertex_pos: Handle<ShaderBuffer>,
+    #[storage(101, read_only, visibility(vertex))]
+    pub vertex_normals: Handle<ShaderBuffer>,
+}
+
+impl MaterialExtension for SoftBodyMaterialExt {
+    fn vertex_shader() -> ShaderRef {
+        "shaders/sim_pipeline.wesl".into()
+    }
+    fn prepass_vertex_shader() -> ShaderRef {
+        "shaders/sim_pipeline.wesl".into()
+    }
+}
+```
+
+这段不到 20 行的材质定义背后解决了四个极易忽略的渲染细节：
+
+1. **WebGPU 严禁 `@vertex` 绑定可写 Storage Buffer**：尽管 `pos` 和 `normals` 在 Compute 阶段是 `read_write`，在 `SoftBodyMaterialExt` 中**必须声明 `read_only`**，否则 WebGPU 校验层会直接拒绝创建渲染管线。
+2. **同时覆盖 `prepass_vertex_shader()` 与防裁剪包围盒**：如果只覆盖 `vertex_shader()`，软体本身虽然在弯曲弹跳，投射在地面上的阴影却会纹丝不动地停留在半空的初始位置！因为平行光阴影贴图（Shadow Map）走的是 Bevy 的 Prepass 管线。同时，由于 CPU 侧 `Mesh` 顶点从未更新，实体必须挂载 `NoFrustumCulling` 与宽松 `Aabb`，防止兔子下落离开初始包围盒时被视锥裁剪瞬间消失。
+3. **统一网格缓冲偏移 `first_vertex_index`**：为了合批（Batching）与间接绘制性能，Bevy 会把地面平面、悬臂梁底座锚点以及软体网格合并塞进同一个全局大 Vertex Buffer 中！因此在 `@vertex` 着色器里，硬件传入的 `@builtin(vertex_index)` 并不是 `0..NV`，而是加上了前序网格顶点总数的全局下标。必须减去 `mesh[vertex_in.instance_index].first_vertex_index` 才能得到真正的局部物理顶点号 `local_vid`。
+4. **Bevy 0.20 WESL 条件编译下的 `@builtin(vertex_index)`**：Bevy 0.20 将内部 PBR 着色器全面迁移到了支持 `@if(...)` 语法的 **WESL（WGSL Extended Shading Language）**，材质绑定组通过 `@group(constants::MATERIAL_BIND_GROUP)` 引用。更隐蔽的一点是：Bevy 0.20 的标准 `Vertex` 输入结构体只在开启形态键 `@if(MORPH_TARGETS)` 时才包含 `@builtin(vertex_index) index: u32` 字段！对于普通网格，如果在函数体里直接读 `vertex.index`，WebGPU 编译 `pbr_opaque_mesh_pipeline` 时就会报成员不存在；而无条件在函数参数上写 `@builtin(vertex_index)` 又会在 Morph 变体下报重复内建绑定。正确的跨变体写法是在入口参数上配合 `@if(!MORPH_TARGETS)` 条件标注：
+
+```wgsl
+// assets/shaders/sim_pipeline.wesl（节选）：同时兼容主通道与阴影 Prepass，精准还原局部顶点索引
+@if(PREPASS_PIPELINE)
+import bevy_pbr::prepass::io::{Vertex, VertexOutput, decompress_vertex};
+@else
+import bevy_pbr::render::forward_io::{Vertex, VertexOutput, decompress_vertex};
+
+@group(constants::MATERIAL_BIND_GROUP) @binding(100) var<storage, read> vertex_pos: array<u32>;
+@group(constants::MATERIAL_BIND_GROUP) @binding(101) var<storage, read> vertex_normals: array<u32>;
+
+@vertex
+fn vertex(
+    vertex_in: Vertex,
+    @if(!MORPH_TARGETS) @builtin(vertex_index) vertex_index: u32,
+) -> VertexOutput {
+    var out: VertexOutput;
+    let vertex = decompress_vertex(vertex_in, vertex_in.instance_index);
+    let first_vertex = mesh[vertex_in.instance_index].first_vertex_index;
+@if(MORPH_TARGETS)
+    let raw_vid = vertex.index;
+@else
+    let raw_vid = vertex_index;
+    let local_vid = raw_vid - first_vertex;
+
+    let world_from_local = mesh_functions::get_world_from_local(vertex_in.instance_index);
+    let dyn_pos = load_pos(local_vid);
+    let dyn_normal = load_normal(local_vid);
+
+    out.world_position = mesh_functions::mesh_position_local_to_world(
+        world_from_local,
+        vec4<f32>(dyn_pos, 1.0),
+    );
+    out.position = position_world_to_clip(out.world_position.xyz);
+    // ... 根据 @if(PREPASS_PIPELINE) 分支填充深度或世界法线
+    return out;
+}
+```
+
+---
+
+## 无头 GPU 单元测试与 WebAssembly 体积瘦身
+
+### 不开窗口验证物理着色器：`wgpu` 无头测试套件
+
+调试 GPU 物理最忌讳“改一行公式、打开窗口肉眼看弹得对不对”——之前提到的行列主序颠倒、松弛权重导致刚度偏软、极端翻转产生 `NaN`，光靠眼睛很难第一时间定位根因。
+
+正因为我们在 `src/lib.rs` 中将纯 CPU 数据构建器 `CpuPhysBuffers::build` 与 Bevy ECS 解耦导出，`tests/svd_test.rs` 与 `tests/arap_test.rs` 可以直接用原生 `wgpu` 创建无窗口（Headless）计算管线，把模拟结果回读到内存做严格的数学断言，全部 4 组 GPU 测试在 `cargo test --release` 下仅需 **0.4 秒**跑完（在 GitHub Actions 无显卡 Linux Runner 上则通过 Mesa Lavapipe 软件 Vulkan 驱动自动执行）：
+
+1. **`test_svd_shader`**：在 GPU 上一次批量分解 256 个随机矩阵（特意混入负行列式翻转矩阵、秩亏奇异矩阵与病态缩放矩阵），断言重建误差 $\|U \Sigma V^\top - A\|_F < 2 \times 10^{-5}$、正交性 $\|U^\top U - I\|_F < 10^{-5}$，且严格满足 $\det(U) = +1,\; \det(V) = +1$ 与 $\operatorname{sign}(\sigma_3) = \operatorname{sign}(\det(A))$。
+2. **`test_rest_pose_zero_drift`**：关闭重力跑满 30 个子步，断言所有四面体的约束残差 $< 10^{-6}$ 且任意顶点最大漂移 $< 10^{-5}\,\text{m}$（一旦 $B = D_m^{-1}$ 行列主序写反，这条测试会在毫秒内捕获失败）。
+3. **`test_inverted_mesh_recovers_positive_volume`**：把整块四面体网格沿 X 轴做镜像反射（$x \mapsto -x$），使 100% 的四面体初始处于彻底翻面状态（$\det(F) = -1 < 0$），在 GPU 上运行求解器后断言**每一个四面体的有向体积全部恢复为正值**且全程无 `NaN`。
+4. **`test_cantilever_pinned_and_floor_contact`**：验证固定端顶点位移精确为 `0.0`、悬臂梁自由端在重力下产生合理挠度，以及自由跌落方块接触地面时不穿透 $y = 0$ 平面。
+
+### WebGPU 跨端构建与 WASM 体积从 81 MB 瘦身到 23 MB
+
+最后，把 Bevy 0.20 项目编译到 `wasm32-unknown-unknown` 并部署到 GitHub Pages 静态托管时，有三个实战细节非常关键：
+
+1. **禁用 `.meta` 探测请求**：Bevy 默认会先向服务器请求 `bunny_positions.vec3f32bin.meta`，在纯静态托管下会产生大量无意义的 HTTP 404。在 `AssetPlugin` 中设置 `meta_check: AssetMetaCheck::Never` 即可彻底消除。
+2. **选择纯 Rust 的 `zstd_rust` 特性**：当为了精简体积对 Bevy 设置 `default-features = false` 并手动开启 PBR 所需的 `tonemapping_luts` 时，Bevy 0.20 要求显式指定 `.zst` 查找表解压后端——选择纯 Rust 实现的 `"zstd_rust"` 即可零 C 依赖交叉编译到 `wasm32`。
+3. **剥离 48 MB 的 WASM `name` 自定义段**：第一次跑通 `wasm-bindgen` 时，产出的 `wgsl_softbody_bg.wasm` 竟然高达 **81 MB**！拆解 WASM 二进制 Section 后发现，真正的 `code` 段只有二十多兆，而用于符号栈回溯的自定义 `name` Section 独占了 **48.28 MB**。通过在 `Cargo.toml` 中配置全局胖 LTO 的 `wasm-release` Profile，并在 `scripts/build-web.sh` 调用 `wasm-bindgen` 时加上 `--remove-name-section --remove-producers-section`：
+
+```bash
+wasm-bindgen \
+  --target web \
+  --no-typescript \
+  --remove-name-section \
+  --remove-producers-section \
+  --out-dir "${DIST_DIR}/pkg" \
+  --out-name wgsl_softbody \
+  "${WASM_PATH}"
+```
+
+未压缩的原始 `.wasm` 体积直接从 **81 MB 骤降至 23 MB**（经 GitHub Pages CDN Gzip / Brotli 传输压缩后仅数 MB），首屏加载体验脱胎换骨。
+
+---
+
+## 小结与延伸阅读
+
+回顾整个项目，实时软体仿真之所以迷人，在于它把连续介质力学、数值线性代数与现代图形硬件架构紧密咬合在了一起：
+
+- **形变梯度 $F = D_s D_m^{-1}$** 为三维体积微元建立了客观的几何语言；
+- **McAdams 3×3 Signed SVD** 让奇异值携带翻转符号，赋予有限元在极端碰撞下“起死回生”的鲁棒性；
+- **子步 XPBD 与同步缩放 $\delta\lambda$ 的无偏并行 Jacobi** 在规避 GPU 数据竞争的同时，守住了精确的动量守恒与物理柔度；
+- **Bevy 0.20 的 ECS `RenderGraph` 与 WESL 扩展材质** 则让模拟结果无需离开显存，零拷贝驱动实时 PBR 光照与动态阴影。
+
+如果你对源码实现或在此基础上继续扩展（例如加入自碰撞空间哈希、鼠标射线抓取交互或 Neo-Hookean 超弹性本构）感兴趣，欢迎直接拉取仓库运行体验：
+
+```bash
+git clone https://github.com/dashuai009/wgsl_compute_shader.git
+cd wgsl_compute_shader
+cargo test --release
+cargo run --release
+```
+
+### 参考资料
+
+1. Macklin, M., Müller, M., & Chentanez, N. (2016). *XPBD: Position-Based Simulation of Compliant Constrained Dynamics*. Motion in Games (MIG).
+2. Macklin, M., Storey, K., Lu, M., Terdiman, P., Chentanez, N., Jeschke, S., & Müller, M. (2019). *Small Steps in Physics Simulation*. ACM SIGGRAPH / Eurographics Symposium on Computer Animation (SCA).
+3. McAdams, A., Selle, A., Tamstorf, R., Teran, J., & Sifakis, E. (2011). *Computing the Singular Value Decomposition of 3×3 Matrices with Minimal Branching and Elementary Floating Point Operations*. UW-Madison Technical Report.
+4. Irving, G., Teran, J., & Fedkiw, R. (2004). *Invertible Finite Elements for Robust Simulation of Large Deformation*. SCA.
+5. Labelle, F., & Shewchuk, J. R. (2007). *Isosurface Stuffing: Fast Tetrahedral Meshes with Good Dihedral Angles*. ACM Transactions on Graphics (SIGGRAPH).

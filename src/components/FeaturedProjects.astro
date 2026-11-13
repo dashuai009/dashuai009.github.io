@@ -36,6 +36,25 @@ const projects = [
 			external: false,
 		},
 	},
+	{
+		name: "WGSL 软体物理仿真",
+		type: "BEVY 0.20 · WEBGPU · XPBD",
+		description:
+			"基于 Bevy 0.20 与 WGSL Compute Shader 实现的四面体 XPBD（Signed-SVD ARAP）实时软体物理模拟，支持浏览器 WebGPU 在线交互。",
+		icon: "material-symbols:view-in-ar-outline-rounded",
+		tone: "wgsl",
+		tags: ["Rust", "Bevy", "WebGPU", "XPBD"],
+		primary: {
+			label: "在线体验",
+			url: "https://dashuai009.github.io/wgsl_compute_shader/",
+			external: true,
+		},
+		secondary: {
+			label: "项目文章",
+			url: "/blog/058/",
+			external: false,
+		},
+	},
 ] as const;
 ---
 
@@ -169,6 +188,7 @@ const projects = [
 	}
 	.project-card.project-tone-pbrt { --project-accent: linear-gradient(90deg, oklch(0.7 0.14 225), oklch(0.68 0.18 275)); }
 	.project-card.project-tone-katex { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 175), oklch(0.66 0.17 235)); }
+	.project-card.project-tone-wgsl { --project-accent: linear-gradient(90deg, oklch(0.74 0.16 45), oklch(0.68 0.18 18)); }
 	.project-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 	.project-icon {
 		display: grid;
@@ -253,6 +273,19 @@ const projects = [
 		flex: 0 0 0.8rem;
 		margin-left: 0.12rem;
 		overflow: visible;
+	}
+
+	@media (min-width: 1180px) {
+		.project-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 0.9rem;
+		}
+		.project-card {
+			padding: 1.3rem;
+		}
+		.project-copy h2 {
+			font-size: 1.28rem;
+		}
 	}
 
 	@media (max-width: 720px) {
