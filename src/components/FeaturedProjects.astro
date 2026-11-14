@@ -55,6 +55,25 @@ const projects = [
 			external: false,
 		},
 	},
+	{
+		name: "alembic-wasm",
+		type: "C++ · WEBASSEMBLY · THREE.JS",
+		description:
+			"将 Alembic (.abc Ogawa) 完整读写能力编译为 WebAssembly，提供强类型 TypeScript SDK 与 Three.js 加载/导出插件，可在浏览器中直接预览与导出动画几何。",
+		icon: "material-symbols:deployed-code-outline-rounded",
+		tone: "alembic",
+		tags: ["C++", "WebAssembly", "Alembic", "Three.js"],
+		primary: {
+			label: "在线体验",
+			url: "https://dashuai009.github.io/AlembicWasm/",
+			external: true,
+		},
+		secondary: {
+			label: "GitHub",
+			url: "https://github.com/dashuai009/AlembicWasm",
+			external: true,
+		},
+	},
 ] as const;
 ---
 
@@ -189,6 +208,7 @@ const projects = [
 	.project-card.project-tone-pbrt { --project-accent: linear-gradient(90deg, oklch(0.7 0.14 225), oklch(0.68 0.18 275)); }
 	.project-card.project-tone-katex { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 175), oklch(0.66 0.17 235)); }
 	.project-card.project-tone-wgsl { --project-accent: linear-gradient(90deg, oklch(0.74 0.16 45), oklch(0.68 0.18 18)); }
+	.project-card.project-tone-alembic { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 300), oklch(0.68 0.17 340)); }
 	.project-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 	.project-icon {
 		display: grid;
