@@ -74,6 +74,25 @@ const projects = [
 			external: true,
 		},
 	},
+	{
+		name: "Gemini 元素周期表",
+		type: "REACT · TYPESCRIPT · I18N",
+		description:
+			"交互式 118 元素周期表，按发布时间依次点亮 Google DeepMind Gemini 4 元素模型（Argon、Carbon、Hydrogen、Neon），悬停展示模型详情并直达官方 Model Card。",
+		icon: "material-symbols:auto-awesome-outline-rounded",
+		tone: "gemini",
+		tags: ["React", "TypeScript", "Vite", "Gemini 4", "i18n"],
+		primary: {
+			label: "在线体验",
+			url: "https://dashuai009.github.io/periodic-table-of-gemini/",
+			external: true,
+		},
+		secondary: {
+			label: "GitHub",
+			url: "https://github.com/dashuai009/periodic-table-of-gemini",
+			external: true,
+		},
+	},
 ] as const;
 ---
 
@@ -209,6 +228,7 @@ const projects = [
 	.project-card.project-tone-katex { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 175), oklch(0.66 0.17 235)); }
 	.project-card.project-tone-wgsl { --project-accent: linear-gradient(90deg, oklch(0.74 0.16 45), oklch(0.68 0.18 18)); }
 	.project-card.project-tone-alembic { --project-accent: linear-gradient(90deg, oklch(0.72 0.15 300), oklch(0.68 0.17 340)); }
+	.project-card.project-tone-gemini { --project-accent: linear-gradient(90deg, oklch(0.72 0.18 28), oklch(0.66 0.18 275)); }
 	.project-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 	.project-icon {
 		display: grid;
